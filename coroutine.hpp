@@ -251,9 +251,8 @@ inline bool coroutine<F>::suspend_on(struct event_base* const base,
     }
   );
 
-  struct event ev[sizeof...(fd)];
-
-  if ([&]<auto ...I>(std::index_sequence<I...>) noexcept
+  if (struct event ev[sizeof...(fd)];
+    [&]<auto ...I>(std::index_sequence<I...>) noexcept
     {
       return (
         (
