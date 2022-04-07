@@ -8,8 +8,15 @@
 #include <memory>
 #include <type_traits>
 
+#include "generic/forwarder.hpp"
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
+
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+
+#include <event2/event.h>
 
 namespace cr2
 {
@@ -23,12 +30,10 @@ struct empty_t{};
 
 }
 
-template <std::size_t S = default_stack_size>
+template <typename F>
 class coroutine
 {
 public:
-  enum : std::size_t { N = S / sizeof(void*), stack_size = S };
-
   enum state {DEAD, NEW, RUNNING, SUSPENDED};
 
 private:
@@ -39,12 +44,22 @@ private:
   std::function<void(coroutine&)> f_;
   void* r_;
 
-  std::unique_ptr<void*[]> stack_{::new void*[N]};
+  std::unique_ptr<void*[]> stack_;
+  void* sp_;
 
 public:
-  coroutine() = default;
+  coroutine(std::size_t const s):
+    stack_{::new void*[s / sizeof(void*)]},
+    sp_{&stack_[s / sizeof(void*)]}
+  {
+  }
 
-  explicit coroutine(auto&& f) { assign(std::forward<decltype(f)>(f)); }
+  explicit coroutine(auto&& f, std::size_t const s = default_stack_size):
+    stack_{::new void*[s / sizeof(void*)]},
+    sp_{&stack_[s / sizeof(void*)]}
+  {
+    assign(std::forward<decltype(f)>(f));
+  }
 
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
@@ -53,8 +68,8 @@ public:
   explicit operator bool() const noexcept { return bool(state_); }
 
   //
-  template <typename R, bool Tuple>
-  decltype(auto) return_val() const
+  template <typename R>
+  decltype(auto) retval() const
     noexcept(
       std::is_void_v<R> ||
       std::is_pointer_v<R> ||
@@ -62,13 +77,9 @@ public:
       std::is_nothrow_move_constructible_v<R>
     )
   {
-    if constexpr(std::is_void_v<R> && !Tuple)
+    if constexpr(std::is_void_v<R>)
     {
       return;
-    }
-    else if constexpr(std::is_void_v<R> && Tuple)
-    {
-      return detail::empty_t{};
     }
     else if constexpr(std::is_pointer_v<R>)
     {
@@ -142,20 +153,20 @@ public:
       asm volatile(
         "movl %0, %%esp"
         :
-        : "r" (&stack_[N])
+        : "r" (sp_)
       );
 # elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) ||\
     defined(__x86_64)
       asm volatile(
         "movq %0, %%rsp"
         :
-        : "r" (&stack_[N])
+        : "r" (sp_)
       );
 # elif defined(__aarch64__) || defined(__arm__)
       asm volatile(
         "mov sp, %0"
         :
-        : "r" (&stack_[N])
+        : "r" (sp_)
       );
 # else
 #   error "can't switch stack frame"
@@ -184,7 +195,7 @@ public:
     }
   }
 
-  template <std::size_t U>
+  template <typename U>
   void suspend_to(coroutine<U>& c) noexcept
   {
     if (savestate(in_))
@@ -197,20 +208,68 @@ public:
       c();
     }
   }
+
+  //
+  bool suspend_on(struct event_base*, evutil_socket_t, short) noexcept;
 };
 
-template <std::size_t S = default_stack_size>
-auto make_coroutine(auto&& ...f)
-  requires(bool(sizeof...(f)))
+auto make(auto&& f, std::size_t const sz = cr2::default_stack_size)
 {
-  if constexpr(sizeof...(f) > 1)
-  {
-    return std::tuple{coroutine<S>(std::forward<decltype(f)>(f))...};
-  }
-  else
-  {
-    return coroutine<S>(std::forward<decltype(f)>(f)...);
-  }
+  return coroutine<decltype(f)>(std::forward<decltype(f)>(f), sz);
+}
+
+auto make_and_run(auto&& f, std::size_t const sz = cr2::default_stack_size)
+{
+  coroutine<decltype(f)> c(std::forward<decltype(f)>(f), sz);
+
+  c();
+
+  return c;
+}
+
+template <typename F>
+decltype(auto) retval(coroutine<F>& c) noexcept
+{
+  using R = decltype(std::declval<F>()(c));
+
+  return c.template retval<R>();
+}
+
+namespace detail
+{
+
+extern "C" void do_resume(evutil_socket_t const fd, short const event,
+  void* const arg)
+{
+  (*static_cast<gnr::forwarder<void()>*>(arg))();
+}
+
+}
+
+template <typename F>
+inline bool coroutine<F>::suspend_on(
+  struct event_base* const base,
+  evutil_socket_t const fd,
+  short const flags) noexcept
+{
+  char tmp[128];
+  auto const ev(reinterpret_cast<struct event*>(tmp));
+
+  gnr::forwarder<void()> f([this]() noexcept
+    {
+      if (coroutine::SUSPENDED == state())
+      {
+        (*this)();
+      }
+    }
+  );
+
+  event_assign(ev, base, fd, flags, detail::do_resume, &f);
+  event_add(ev, {});
+
+  suspend();
+
+  return false;
 }
 
 }

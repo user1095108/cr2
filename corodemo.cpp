@@ -12,8 +12,7 @@ struct A
 
 int main()
 {
-  auto c0(
-    cr2::make_coroutine(
+  auto c0(cr2::make(
       [](auto& c)
       {
         for (;;)
@@ -25,8 +24,7 @@ int main()
     )
   );
 
-  auto c1(
-    cr2::make_coroutine(
+  auto c1(cr2::make(
       [&](auto& c)
       {
         c.suspend_to(c0);
