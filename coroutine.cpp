@@ -12,10 +12,25 @@ struct A
 
 int main()
 {
-  auto c(
+  auto c0(
     cr2::make_coroutine(
       [](auto& c)
       {
+        for (;;)
+        {
+          std::cout << "hi!\n";
+          c.suspend();
+        }
+      }
+    )
+  );
+
+  auto c1(
+    cr2::make_coroutine(
+      [&](auto& c)
+      {
+        c.suspend_to(c0);
+
         A a;
 
         for (int i{}; i != 3; ++i)
@@ -24,14 +39,16 @@ int main()
 
           c.suspend();
         }
+
+        c.suspend_to(c0);
       }
     )
   );
 
-  while (c)
+  while (c1)
   {
     std::cout << "resuming" << std::endl;
-    c.resume();
+    c1.resume();
   }
 
   std::cin.ignore();
