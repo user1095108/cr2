@@ -19,7 +19,7 @@ enum : std::size_t { default_stack_size = 1024 * 1024 };
 namespace detail
 {
 
-using empty_t = struct{};
+struct empty_t{};
 
 }
 
@@ -122,7 +122,7 @@ public:
     state_ = NEW;
   }
 
-  void __attribute__ ((noinline)) operator() noexcept
+  void __attribute__ ((noinline)) operator()() noexcept
   {
     if (savestate(out_))
     {
@@ -194,7 +194,7 @@ public:
     else
     {
       state_ = SUSPENDED;
-      c.resume();
+      c();
     }
   }
 };
