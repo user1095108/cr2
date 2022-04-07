@@ -67,6 +67,55 @@ public:
   //
   explicit operator bool() const noexcept { return bool(state_); }
 
+  void __attribute__ ((noinline)) operator()() noexcept
+  {
+    if (savestate(out_))
+    {
+      clobber_all();
+    }
+    else if (SUSPENDED == state_)
+    {
+      state_ = RUNNING;
+      restorestate(in_); // return inside
+    }
+    else
+    {
+      state_ = RUNNING;
+
+#if defined(__GNUC__)
+# if defined(i386) || defined(__i386) || defined(__i386__)
+      asm volatile(
+        "movl %0, %%esp"
+        :
+        : "r" (sp_)
+      );
+# elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) ||\
+    defined(__x86_64)
+      asm volatile(
+        "movq %0, %%rsp"
+        :
+        : "r" (sp_)
+      );
+# elif defined(__aarch64__) || defined(__arm__)
+      asm volatile(
+        "mov sp, %0"
+        :
+        : "r" (sp_)
+      );
+# else
+#   error "can't switch stack frame"
+# endif
+#else
+# error "can't switch stack frame"
+#endif
+
+      f_(*this);
+
+      state_ = DEAD;
+      restorestate(out_); // return outside
+    }
+  }
+
   //
   template <typename R>
   decltype(auto) retval() const
@@ -133,55 +182,7 @@ public:
     state_ = NEW;
   }
 
-  void __attribute__ ((noinline)) operator()() noexcept
-  {
-    if (savestate(out_))
-    {
-      clobber_all();
-    }
-    else if (SUSPENDED == state_)
-    {
-      state_ = RUNNING;
-      restorestate(in_); // return inside
-    }
-    else
-    {
-      state_ = RUNNING;
-
-#if defined(__GNUC__)
-# if defined(i386) || defined(__i386) || defined(__i386__)
-      asm volatile(
-        "movl %0, %%esp"
-        :
-        : "r" (sp_)
-      );
-# elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) ||\
-    defined(__x86_64)
-      asm volatile(
-        "movq %0, %%rsp"
-        :
-        : "r" (sp_)
-      );
-# elif defined(__aarch64__) || defined(__arm__)
-      asm volatile(
-        "mov sp, %0"
-        :
-        : "r" (sp_)
-      );
-# else
-#   error "can't switch stack frame"
-# endif
-#else
-# error "can't switch stack frame"
-#endif
-
-      f_(*this);
-
-      state_ = DEAD;
-      restorestate(out_); // return outside
-    }
-  }
-
+  //
   void suspend() noexcept
   {
     if (savestate(in_))
@@ -194,6 +195,8 @@ public:
       restorestate(out_);
     }
   }
+
+  bool suspend_on(struct event_base*, short, auto const...) noexcept;
 
   template <typename U>
   void suspend_to(coroutine<U>& c) noexcept
@@ -208,9 +211,6 @@ public:
       c();
     }
   }
-
-  //
-  bool suspend_on(struct event_base*, evutil_socket_t, short) noexcept;
 };
 
 auto make(auto&& f, std::size_t const sz = cr2::default_stack_size)
@@ -230,7 +230,7 @@ namespace detail
 {
 
 extern "C"
-inline void do_resume(evutil_socket_t, short, void* const arg) noexcept
+inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
 {
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
@@ -238,23 +238,29 @@ inline void do_resume(evutil_socket_t, short, void* const arg) noexcept
 }
 
 template <typename F>
-inline bool coroutine<F>::suspend_on(
-  struct event_base* const base,
-  evutil_socket_t const fd,
-  short const flags) noexcept
+inline bool coroutine<F>::suspend_on(struct event_base* const base,
+  short const flags, auto const ...fd) noexcept
 {
-  struct event ev{};
+  struct event ev[sizeof...(fd)];
 
-  gnr::forwarder<void()> f(
+  gnr::forwarder<void() noexcept> f(
     [&]() noexcept
     {
-      assert(SUSPENDED == state());
+      event_base_loopbreak(base);
       (*this)();
     }
   );
 
-  event_assign(&ev, base, fd, flags, detail::do_resume, &f);
-  event_add(&ev, {});
+  [&]<auto ...I>(std::index_sequence<I...>) noexcept
+  {
+    (
+      (
+        event_assign(&ev[I], base, fd, flags, detail::do_cb, &f),
+        event_add(&ev[I], {})
+      ),
+      ...
+    );
+  }(std::make_index_sequence<sizeof...(fd)>());
 
   suspend();
 

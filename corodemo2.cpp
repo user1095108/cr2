@@ -46,7 +46,7 @@ int main()
       [&](auto& c)
       {
         evutil_make_socket_nonblocking(STDIN_FILENO);
-        c.suspend_on(base, STDIN_FILENO, EV_READ);
+        c.suspend_on(base, EV_READ, STDIN_FILENO);
 
         std::cout << "coro2\n";
       }
