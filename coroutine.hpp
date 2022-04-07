@@ -264,13 +264,11 @@ inline bool coroutine<F>::suspend_on(struct event_base* const base,
     }(std::make_index_sequence<sizeof...(fd)>())
   )
   {
-    suspend();
-
-    return false;
+    return true;
   }
   else
   {
-    return true;
+    return suspend(), false;
   }
 }
 
