@@ -12,7 +12,7 @@ int main()
 {
   auto const base(event_base_new());
 
-  auto c(cr2::make_and_run(
+  auto c(cr2::make(
       [&](auto& c)
       {
         evutil_socket_t sck;
@@ -57,7 +57,7 @@ int main()
             if ((EAGAIN == errno) || (EWOULDBLOCK == errno))
             {
               std::cout << "pausing\n";
-              c.suspend_on(base, sck, EV_READ|EV_CLOSED);
+              c.suspend_on(base, sck, EV_CLOSED|EV_READ);
 
               continue;
             }
@@ -81,8 +81,13 @@ int main()
     )
   );
 
-  while (c)
+  for (c(); c;)
   {
+    if (cr2::SUSPENDED != c.state())
+    {
+      std::cout << c.state() << std::endl;
+    }
+
     event_base_loop(base, EVLOOP_NONBLOCK);
   }
 

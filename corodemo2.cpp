@@ -19,7 +19,7 @@ int main()
       )
     );
 
-    auto c1(cr2::make_and_run(
+    auto c1(cr2::make(
         [&](auto& c)
         {
           std::intmax_t j(5);
@@ -37,10 +37,12 @@ int main()
       )
     );
 
+    c1();
+
     std::cout << cr2::retval(c1) << std::endl;
   }
 
-  auto c2(cr2::make_and_run(
+  auto c2(cr2::make(
       [&](auto& c)
       {
         evutil_make_socket_nonblocking(STDIN_FILENO);
@@ -51,7 +53,7 @@ int main()
     )
   );
 
-  while (c2)
+  for (c2(); c2;)
   {
     event_base_loop(base, EVLOOP_NONBLOCK);
   }

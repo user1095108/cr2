@@ -43,7 +43,7 @@ int main()
     )
   );
 
-  while (c1)
+  for (c1(); c1;)
   {
     std::cout << "resuming" << std::endl;
     c1();

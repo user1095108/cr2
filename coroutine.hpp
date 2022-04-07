@@ -17,11 +17,14 @@
 #include <fcntl.h>
 
 #include <event2/event.h>
+#include <event2/event_struct.h>
 
 namespace cr2
 {
 
 enum : std::size_t { default_stack_size = 1024 * 1024 };
+
+enum state {DEAD, NEW, RUNNING, SUSPENDED};
 
 namespace detail
 {
@@ -33,9 +36,6 @@ struct empty_t{};
 template <typename F>
 class coroutine
 {
-public:
-  enum state {DEAD, NEW, RUNNING, SUSPENDED};
-
 private:
   gnr::statebuf in_, out_;
 
@@ -218,15 +218,6 @@ auto make(auto&& f, std::size_t const sz = cr2::default_stack_size)
   return coroutine<decltype(f)>(std::forward<decltype(f)>(f), sz);
 }
 
-auto make_and_run(auto&& f, std::size_t const sz = cr2::default_stack_size)
-{
-  coroutine<decltype(f)> c(std::forward<decltype(f)>(f), sz);
-
-  c();
-
-  return c;
-}
-
 template <typename F>
 decltype(auto) retval(coroutine<F>& c) noexcept
 {
@@ -238,8 +229,8 @@ decltype(auto) retval(coroutine<F>& c) noexcept
 namespace detail
 {
 
-extern "C" void do_resume(evutil_socket_t const fd, short const event,
-  void* const arg)
+extern "C"
+inline void do_resume(evutil_socket_t, short, void* const arg) noexcept
 {
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
@@ -252,20 +243,18 @@ inline bool coroutine<F>::suspend_on(
   evutil_socket_t const fd,
   short const flags) noexcept
 {
-  char tmp[128];
-  auto const ev(reinterpret_cast<struct event*>(tmp));
+  struct event ev{};
 
-  gnr::forwarder<void()> f([this]() noexcept
+  gnr::forwarder<void()> f(
+    [&]() noexcept
     {
-      if (coroutine::SUSPENDED == state())
-      {
-        (*this)();
-      }
+      assert(SUSPENDED == state());
+      (*this)();
     }
   );
 
-  event_assign(ev, base, fd, flags, detail::do_resume, &f);
-  event_add(ev, {});
+  event_assign(&ev, base, fd, flags, detail::do_resume, &f);
+  event_add(&ev, {});
 
   suspend();
 
