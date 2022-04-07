@@ -6,37 +6,39 @@ int main()
 {
   auto const base(event_base_new());
 
-  auto c0(cr2::make(
-      [](auto& c)
-      {
-        for (;;)
+  {
+    auto c0(cr2::make(
+        [](auto& c)
         {
-          std::cout << "coro0\n";
-          c.suspend();
+          for (;;)
+          {
+            std::cout << "coro0\n";
+            c.suspend();
+          }
         }
-      }
-    )
-  );
+      )
+    );
 
-  auto c1(cr2::make_and_run(
-      [&](auto& c)
-      {
-        std::intmax_t j(5);
-
-        for (auto i(j - 1); 1 != i; --i)
+    auto c1(cr2::make_and_run(
+        [&](auto& c)
         {
-          std::cout << "coro1\n";
+          std::intmax_t j(5);
 
-          j *= i;
-          c.suspend_to(c0);
+          for (auto i(j - 1); 1 != i; --i)
+          {
+            std::cout << "coro1\n";
+
+            j *= i;
+            c.suspend_to(c0);
+          }
+
+          return j;
         }
+      )
+    );
 
-        return j;
-      }
-    )
-  );
-
-  std::cout << cr2::retval(c1) << std::endl;
+    std::cout << cr2::retval(c1) << std::endl;
+  }
 
   auto c2(cr2::make_and_run(
       [&](auto& c)
