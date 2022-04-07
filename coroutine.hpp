@@ -27,7 +27,7 @@ template <std::size_t S = default_stack_size>
 class coroutine
 {
 public:
-  enum : std::size_t { stack_size = S, N = S / sizeof(void*) };
+  enum : std::size_t { N = S / sizeof(void*), stack_size = S };
 
   enum state {DEAD, NEW, RUNNING, SUSPENDED};
 
@@ -97,14 +97,14 @@ public:
     }
     else if constexpr(std::is_pointer_v<R>)
     {
-      f_ = [this, f(std::forward<decltype(f)>(f))]()
+      f_ = [this, f(std::forward<decltype(f)>(f))](coroutine& c)
         {
           r_ = const_cast<void*>(static_cast<void const*>(f(*this)));
         };
     }
     else if constexpr(std::is_reference_v<R>)
     {
-      f_ = [this, f(std::forward<decltype(f)>(f))]()
+      f_ = [this, f(std::forward<decltype(f)>(f))](coroutine& c)
         {
           r_ = const_cast<void*>(static_cast<void const*>(&f(*this)));
         };
@@ -112,10 +112,10 @@ public:
     else
     {
       f_ = [this, f(std::forward<decltype(f)>(f)), r(R())](
-        coroutine& l) mutable
+        coroutine& c) mutable
         {
           r_ = const_cast<void*>(static_cast<void const*>(&r));
-          r = f(l);
+          r = f(c);
         };
     }
 
