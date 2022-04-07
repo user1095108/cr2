@@ -122,7 +122,7 @@ public:
     state_ = NEW;
   }
 
-  void __attribute__ ((noinline)) resume() noexcept
+  void __attribute__ ((noinline)) operator() noexcept
   {
     if (savestate(out_))
     {

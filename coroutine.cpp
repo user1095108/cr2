@@ -48,7 +48,7 @@ int main()
   while (c1)
   {
     std::cout << "resuming" << std::endl;
-    c1.resume();
+    c1();
   }
 
   std::cin.ignore();
