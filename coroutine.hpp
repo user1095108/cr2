@@ -182,7 +182,8 @@ public:
     state_ = NEW;
   }
 
-  //
+  void reset() noexcept { state_ = NEW; }
+
   void suspend() noexcept
   {
     if (savestate(in_))
