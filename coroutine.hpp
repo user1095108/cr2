@@ -246,8 +246,10 @@ inline bool coroutine<F>::suspend_on(struct event_base* const base,
   gnr::forwarder<void() noexcept> f(
     [&]() noexcept
     {
-      event_base_loopbreak(base);
-      (*this)();
+      if (SUSPENDED == state())
+      {
+        (*this)();
+      }
     }
   );
 
