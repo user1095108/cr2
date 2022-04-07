@@ -248,6 +248,7 @@ inline bool coroutine<F>::suspend_on(struct event_base* const base,
     {
       if (SUSPENDED == state())
       {
+        event_base_loopbreak(base);
         (*this)();
       }
     }
