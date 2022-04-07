@@ -241,33 +241,38 @@ template <typename F>
 inline bool coroutine<F>::suspend_on(struct event_base* const base,
   short const flags, auto const ...fd) noexcept
 {
-  struct event ev[sizeof...(fd)];
-
   gnr::forwarder<void() noexcept> f(
     [&]() noexcept
     {
       if (SUSPENDED == state())
       {
-        event_base_loopbreak(base);
         (*this)();
       }
     }
   );
 
-  [&]<auto ...I>(std::index_sequence<I...>) noexcept
+  struct event ev[sizeof...(fd)];
+
+  if ([&]<auto ...I>(std::index_sequence<I...>) noexcept
+    {
+      return (
+        (
+          event_assign(&ev[I], base, fd, flags, detail::do_cb, &f),
+          (-1 == event_add(&ev[I], {}))
+        ) ||
+        ...
+      );
+    }(std::make_index_sequence<sizeof...(fd)>())
+  )
   {
-    (
-      (
-        event_assign(&ev[I], base, fd, flags, detail::do_cb, &f),
-        event_add(&ev[I], {})
-      ),
-      ...
-    );
-  }(std::make_index_sequence<sizeof...(fd)>());
+    suspend();
 
-  suspend();
-
-  return false;
+    return false;
+  }
+  else
+  {
+    return true;
+  }
 }
 
 }
