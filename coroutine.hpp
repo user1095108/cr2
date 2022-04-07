@@ -80,7 +80,7 @@ public:
     }
     else
     {
-      return R(std::move(*static_cast<R*>(r_)));
+      return *static_cast<R*>(r_);
     }
   }
 
