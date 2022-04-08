@@ -26,7 +26,7 @@ int main()
           std::cout << "coro1\n";
 
           j *= i;
-          c.suspend();
+          c.suspend_to(c0);
         }
 
         return j;
