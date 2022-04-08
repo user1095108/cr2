@@ -12,7 +12,7 @@ struct A
 
 int main()
 {
-  auto c0(cr2::make_coroutine(
+  auto c0(cr2::make_coroutine<512>(
       [](auto& c)
       {
         for (;;)
@@ -39,7 +39,7 @@ int main()
     )
   );
 
-  auto c2(cr2::make_coroutine(
+  auto c2(cr2::make_coroutine<256>(
       [](auto& c)
       {
         c.suspend_on(EV_READ, STDIN_FILENO);

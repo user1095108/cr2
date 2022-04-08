@@ -16,7 +16,7 @@
 namespace cr2
 {
 
-enum : std::size_t { default_stack_size = 1024 * 1024 };
+enum : std::size_t { default_stack_size = 1024 };
 
 enum state {DEAD, NEW, RUNNING, SUSPENDED, PAUSED};
 
@@ -30,7 +30,7 @@ class coroutine
 private:
   template <std::size_t> friend  auto make_coroutine(auto&&);
 
-  enum : std::size_t { N = S / sizeof(void*) };
+  enum : std::size_t { N = 1024 * S / sizeof(void*) };
 
   gnr::statebuf in_, out_;
 
