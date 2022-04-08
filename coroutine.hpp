@@ -228,15 +228,7 @@ public:
   template <class Rep, class Period>
   bool sleep(std::chrono::duration<Rep, Period> const d) noexcept
   {
-    gnr::forwarder<void() noexcept> f(
-      [&]() noexcept
-      {
-        if (PAUSED == state())
-        {
-          state_ = SUSPENDED;
-        }
-      }
-    );
+    gnr::forwarder<void() noexcept> f([&]() noexcept { state_ = SUSPENDED; });
 
     struct event ev;
     event_assign(&ev, base, -1, 0, detail::do_cb, &f);
@@ -285,20 +277,16 @@ decltype(auto) await(auto&& ...c)
 {
   for (;;)
   {
-    std::size_t r{}, p{};
+    std::size_t p{}, r{};
 
     (
       (c.state() >= NEW ? ++r, c() : (c.state() == PAUSED ? void(++p) : void(0))),
       ...
     );
 
-    if (r)
+    if (p || r)
     {
-      event_base_loop(base, EVLOOP_NONBLOCK); // process events
-    }
-    else if (p)
-    {
-      event_base_loop(base, EVLOOP_ONCE); // process events
+      event_base_loop(base, r ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
     }
     else
     {
