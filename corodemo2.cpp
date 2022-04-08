@@ -4,40 +4,43 @@
 
 int main()
 {
-  cr2::coroutine c0(
-    [](auto& c)
-    {
-      for (;;)
+  auto c0(cr2::make_coroutine(
+      [](auto& c) -> void
       {
-        std::cout << "coro0\n";
-        c.suspend();
+        for (;;)
+        {
+          std::cout << "coro0\n";
+          c.suspend();
+        }
       }
-    }
+    )
   );
 
-  cr2::coroutine c1(
-    [&](auto& c)
-    {
-      std::intmax_t j(5);
-
-      for (auto i(j - 1); 1 != i; --i)
+  auto c1(cr2::make_coroutine(
+      [&](auto& c) -> std::intmax_t
       {
-        std::cout << "coro1\n";
+        std::intmax_t j(5);
 
-        j *= i;
-        c.suspend_to(c0);
+        for (auto i(j - 1); 1 != i; --i)
+        {
+          std::cout << "coro1\n";
+
+          j *= i;
+          c.suspend();
+        }
+
+        return j;
       }
-
-      return j;
-    }
+    )
   );
 
-  cr2::coroutine c2(
-    [](auto& c)
-    {
-      c.suspend_on(EV_READ, STDIN_FILENO);
-      std::cout << "coro2\n";
-    }
+  auto c2(cr2::make_coroutine(
+      [](auto& c) -> void
+      {
+        c.suspend_on(EV_READ, STDIN_FILENO);
+        std::cout << "coro2\n";
+      }
+    )
   );
 
   std::cout << std::get<0>(cr2::await(c1, c2)) << std::endl;
