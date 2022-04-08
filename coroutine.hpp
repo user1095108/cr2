@@ -178,20 +178,6 @@ public:
   void pause() noexcept { set_state<PAUSED>(); }
   void suspend() noexcept { set_state<SUSPENDED>(); }
 
-  template <typename A, typename B, std::size_t C>
-  void suspend_to(coroutine<A, B, C>& c) noexcept
-  {
-    if (state_ = SUSPENDED; savestate(in_))
-    {
-      clobber_all()
-    }
-    else
-    {
-      c();
-      restorestate(out_);
-    }
-  }
-
   bool suspend_on(auto&& ...a) noexcept
   {
     gnr::forwarder<void() noexcept> f(
@@ -221,7 +207,33 @@ public:
     }
     else
     {
-      return pause(), false;
+      pause();
+
+      evp = &*ev;
+
+      gnr::invoke_split_cond<2>(
+        [&](auto&&, auto&& fd) noexcept
+        {
+          event_del(evp++, {});
+        },
+        std::forward<decltype(a)>(a)...
+      );
+
+      return false;
+    }
+  }
+
+  template <typename A, typename B, std::size_t C>
+  void suspend_to(coroutine<A, B, C>& c) noexcept
+  {
+    if (state_ = SUSPENDED; savestate(in_))
+    {
+      clobber_all()
+    }
+    else
+    {
+      c();
+      restorestate(out_);
     }
   }
 
