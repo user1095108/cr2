@@ -20,7 +20,7 @@ int main()
             while (10 != i);
           }
         ),
-        cr2::make_coroutine<128>(
+        *cr2::make_shared<128>(
           [](auto& c)
           {
             unsigned i(9);
@@ -33,7 +33,7 @@ int main()
             while (i);
           }
         ),
-        cr2::make_coroutine<128>(
+        *cr2::make_unique<128>(
           [](auto& c)
           {
             std::intmax_t j(5);

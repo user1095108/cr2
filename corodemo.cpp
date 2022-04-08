@@ -25,7 +25,7 @@ int main()
   );
 
   cr2::run(
-    cr2::make_coroutine(
+    *cr2::make_unique(
       [&](auto& c)
       {
         A a;

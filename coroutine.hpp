@@ -3,6 +3,7 @@
 # pragma once
 
 #include <cstddef> // std::size_t
+#include <algorithm>
 #include <chrono>
 #include <memory> // std::unique_ptr
 
@@ -34,14 +35,10 @@ inline void socket_cb(evutil_socket_t, short, void* const arg) noexcept
 
 }
 
-template <std::size_t = default_stack_size> auto make_coroutine(auto&&);
-
 template <typename F, typename R, std::size_t S>
 class coroutine
 {
 private:
-  template <std::size_t> friend  auto make_coroutine(auto&&);
-
   enum : std::size_t { N = 1024 * S / sizeof(void*) };
 
   gnr::statebuf in_, out_;
@@ -53,16 +50,6 @@ private:
   F f_;
 
   alignas(std::max_align_t) void* stack_[N];
-
-  explicit coroutine(F&& f):
-    state_{NEW},
-    f_(std::move(f))
-  {
-    if (!cr2::base)
-    {
-      cr2::base = event_base_new();
-    }
-  }
 
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
@@ -95,6 +82,16 @@ private:
   }
 
 public:
+  explicit coroutine(F&& f):
+    state_{NEW},
+    f_(std::move(f))
+  {
+    if (!cr2::base)
+    {
+      cr2::base = event_base_new();
+    }
+  }
+
   explicit operator bool() const noexcept { return bool(state_); }
 
   void __attribute__((noinline)) operator()() noexcept
@@ -190,7 +187,7 @@ public:
       }
     );
 
-    struct event ev[sizeof...(a)];
+    struct event ev[sizeof...(a) / 2];
 
     if (auto evp(&*ev); gnr::invoke_split_cond<2>(
         [&](auto&& flags, auto&& fd) noexcept
@@ -209,15 +206,7 @@ public:
     {
       pause();
 
-      evp = &*ev;
-
-      gnr::invoke_split<2>(
-        [&](auto&&, auto&& fd) noexcept
-        {
-          event_del(evp++);
-        },
-        std::forward<decltype(a)>(a)...
-      );
+      std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
       return false;
     }
@@ -261,7 +250,7 @@ public:
   }
 };
 
-template <std::size_t S>
+template <std::size_t S = default_stack_size>
 auto make_coroutine(auto&& f)
 {
   using F = std::remove_cvref_t<decltype(f)>;
@@ -271,6 +260,30 @@ auto make_coroutine(auto&& f)
   using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
 
   return C(std::forward<decltype(f)>(f));
+}
+
+template <std::size_t S = default_stack_size>
+auto make_shared(auto&& f)
+{
+  using F = std::remove_cvref_t<decltype(f)>;
+  using R = decltype(
+    std::declval<F>()(std::declval<coroutine<F, void, S>&>())
+  );
+  using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
+
+  return std::make_shared<C>(std::forward<decltype(f)>(f));
+}
+
+template <std::size_t S = default_stack_size>
+auto make_unique(auto&& f)
+{
+  using F = std::remove_cvref_t<decltype(f)>;
+  using R = decltype(
+    std::declval<F>()(std::declval<coroutine<F, void, S>&>())
+  );
+  using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
+
+  return std::make_unique<C>(std::forward<decltype(f)>(f));
 }
 
 decltype(auto) run(auto&& ...c)
