@@ -25,10 +25,14 @@ enum state {DEAD, NEW, RUNNING, SUSPENDED, PAUSED};
 
 static inline struct event_base* base;
 
+template <std::size_t = default_stack_size> auto make_coroutine(auto&&);
+
 template <typename F, std::size_t S>
 class coroutine
 {
 private:
+  template <std::size_t> friend  auto make_coroutine(auto&&);
+
   enum : std::size_t { N = S / sizeof(void*) };
 
   gnr::statebuf in_, out_;
@@ -43,7 +47,6 @@ private:
   alignas(std::max_align_t) void* stack_[N];
   //std::unique_ptr<void*[]> stack_{::new void*[N]};
 
-public:
   explicit coroutine(F&& f):
     state_{NEW},
     f_(std::move(f))
@@ -57,7 +60,7 @@ public:
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
 
-  //
+public:
   explicit operator bool() const noexcept { return bool(state_); }
 
   void __attribute__((noinline)) operator()() noexcept
@@ -189,8 +192,8 @@ public:
   bool suspend_on(auto&& ...) noexcept;
 };
 
-template <std::size_t S = default_stack_size>
-auto make_coroutine(auto&& f) noexcept
+template <std::size_t S>
+auto make_coroutine(auto&& f)
 {
   return coroutine<std::remove_cvref_t<decltype(f)>, S>(
     std::forward<decltype(f)>(f)
