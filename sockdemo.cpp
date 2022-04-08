@@ -9,7 +9,8 @@ using namespace std::literals::string_literals;
 
 int main()
 {
-  auto c0(cr2::make_plain<128>(
+  auto const t(
+    cr2::make_and_run<128, 512>(
       [](auto& c)
       {
         std::intmax_t j(10);
@@ -23,11 +24,7 @@ int main()
         }
 
         return j;
-      }
-    )
-  );
-
-  auto c1(cr2::make_plain<512>(
+      },
       [&](auto& c)
       {
         evutil_socket_t sck;
@@ -95,8 +92,6 @@ int main()
       }
     )
   );
-
-  auto const t(cr2::run(c0, c1));
 
   std::cout << std::get<1>(t) << std::endl;
   std::cout << std::get<0>(t) << std::endl;
