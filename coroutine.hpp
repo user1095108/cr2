@@ -73,7 +73,7 @@ private:
 public:
   explicit operator bool() const noexcept { return bool(state_); }
 
-  [[noreturn]] void __attribute__((noinline)) execute() noexcept
+  void __attribute__((noinline)) execute() noexcept
   {
     if constexpr(std::is_void_v<R>)
     {
@@ -83,10 +83,6 @@ public:
     {
       r_ = f_(*this);
     }
-
-    state_ = DEAD;
-
-    restorestate(out_); // return outside
   }
 
   void __attribute__((noinline)) operator()() noexcept
@@ -133,6 +129,10 @@ public:
 #endif
 
       execute();
+
+      state_ = DEAD;
+
+      restorestate(out_); // return outside
     }
   }
 
