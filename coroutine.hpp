@@ -211,10 +211,10 @@ public:
 
       evp = &*ev;
 
-      gnr::invoke_split_cond<2>(
+      gnr::invoke_split<2>(
         [&](auto&&, auto&& fd) noexcept
         {
-          event_del(evp++, {});
+          event_del(evp++);
         },
         std::forward<decltype(a)>(a)...
       );
