@@ -17,7 +17,7 @@
 namespace cr2
 {
 
-enum : std::size_t { default_stack_size = 1024 };
+enum : std::size_t { default_stack_size = 512 };
 
 enum state {DEAD, RUNNING, PAUSED, NEW, SUSPENDED};
 
@@ -259,20 +259,8 @@ auto make_coroutine(auto&& f)
   return C(std::forward<decltype(f)>(f));
 }
 
-namespace detail
-{
-
-template <bool Tuple = false, typename F, typename R, std::size_t S>
-inline decltype(auto) retval(coroutine<F, R, S>& c)
-  noexcept(noexcept(c.template retval<Tuple>()))
-{
-  return c.template retval<Tuple>();
-}
-
-}
-
 decltype(auto) await(auto&& ...c)
-  noexcept(noexcept((detail::retval(c), ...)))
+  noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
   for (;;)
@@ -283,7 +271,7 @@ decltype(auto) await(auto&& ...c)
       (
         c.state() >= NEW ?
           ++r, c() :
-          void(c.state() == PAUSED ? ++p : 0)
+          void(PAUSED == c.state() ? ++p : 0)
       ),
       ...
     );
@@ -309,13 +297,13 @@ decltype(auto) await(auto&& ...c)
 
   if constexpr(sizeof...(c) > 1)
   {
-    return std::tuple<decltype(detail::retval<true>(c))...>{
-      detail::retval<true>(c)...
+    return std::tuple<decltype(c.template retval<true>())...>{
+      c.template retval<true>()...
     };
   }
   else
   {
-    return detail::retval((c, ...));
+    return (c, ...).template retval<>();
   }
 }
 

@@ -7,7 +7,7 @@ int main()
   std::cout <<
     std::get<2>(
       cr2::await(
-        cr2::make_coroutine(
+        cr2::make_coroutine<128>(
           [](auto& c)
           {
             unsigned i(1);
@@ -20,7 +20,7 @@ int main()
             while (10 != i);
           }
         ),
-        cr2::make_coroutine(
+        cr2::make_coroutine<128>(
           [](auto& c)
           {
             unsigned i(9);
@@ -33,7 +33,7 @@ int main()
             while (i);
           }
         ),
-        cr2::make_coroutine(
+        cr2::make_coroutine<128>(
           [](auto& c)
           {
             std::intmax_t j(5);
