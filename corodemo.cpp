@@ -12,7 +12,7 @@ struct A
 
 int main()
 {
-  auto c0(cr2::make_coroutine<512>(
+  auto c0(cr2::make_coroutine<128>(
       [](auto& c)
       {
         for (;;)
