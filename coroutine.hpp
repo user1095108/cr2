@@ -62,7 +62,7 @@ private:
   {
     if (state_ = State; savestate(in_))
     {
-      clobber_all()
+      clobber_all();
     }
     else
     {
@@ -73,7 +73,7 @@ private:
 public:
   explicit operator bool() const noexcept { return bool(state_); }
 
-  void __attribute__((noinline)) execute() noexcept
+  [[noreturn]] void __attribute__((noinline)) execute() noexcept
   {
     if constexpr(std::is_void_v<R>)
     {
@@ -83,6 +83,10 @@ public:
     {
       r_ = f_(*this);
     }
+
+    state_ = DEAD;
+
+    restorestate(out_); // return outside
   }
 
   void __attribute__((noinline)) operator()() noexcept
@@ -91,15 +95,17 @@ public:
     {
       clobber_all();
     }
-    else if (SUSPENDED == state_)
-    {
-      state_ = RUNNING;
-
-      restorestate(in_); // return inside
-    }
     else
     {
-      state_ = RUNNING;
+      if (SUSPENDED == state_)
+      {
+        state_ = RUNNING;
+
+        restorestate(in_); // return inside
+      }
+      else
+      {
+        state_ = RUNNING;
 
 #if defined(__GNUC__)
 # if defined(i386) || defined(__i386) || defined(__i386__)
@@ -129,11 +135,8 @@ public:
 #endif
 
       execute();
-
-      state_ = DEAD;
-
-      restorestate(out_); // return outside
     }
+  }
   }
 
   //
@@ -167,7 +170,6 @@ public:
   void reset() noexcept { state_ = NEW; }
 
   void pause() noexcept { set_state<PAUSED>(); }
-
   void suspend() noexcept { set_state<SUSPENDED>(); }
 
   template <typename A, std::size_t B>
