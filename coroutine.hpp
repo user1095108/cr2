@@ -201,13 +201,13 @@ public:
   bool suspend_on(auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
-    gnr::forwarder<void() noexcept> f(
-      [&]() noexcept
+    short fl;
+
+    gnr::forwarder<void(short) noexcept> f(
+      [&](short const f) noexcept
       {
-        if (PAUSED == state())
-        {
-          state_ = SUSPENDED;
-        }
+        fl = f;
+        state_ = SUSPENDED;
       }
     );
 
@@ -224,7 +224,7 @@ public:
       )
     )
     {
-      return true;
+      return std::pair(true, 0);
     }
     else
     {
@@ -232,7 +232,7 @@ public:
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
-      return false;
+      return std::pair<false, fl>;
     }
   }
 
@@ -241,13 +241,13 @@ public:
     auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
-    gnr::forwarder<void() noexcept> f(
-      [&]() noexcept
+    short fl;
+
+    gnr::forwarder<void(short) noexcept> f(
+      [&](short const fl) noexcept
       {
-        if (PAUSED == state())
-        {
-          state_ = SUSPENDED;
-        }
+        fl = f;
+        state_ = SUSPENDED;
       }
     );
 
@@ -269,7 +269,7 @@ public:
       )
     )
     {
-      return true;
+      return std::pair(true, 0);
     }
     else
     {
@@ -277,7 +277,7 @@ public:
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
-      return false;
+      return std::pair<false, fl>;
     }
   }
 
