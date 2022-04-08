@@ -51,7 +51,7 @@ int main()
       for (evutil_make_socket_nonblocking(STDIN_FILENO);;)
       {
         std::cout << "waiting for keypress\n";
-        c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO);
+        auto p(c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO));
 
         if (char c; 1 == read(STDIN_FILENO, &c, 1))
         {

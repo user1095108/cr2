@@ -28,9 +28,10 @@ namespace detail
 {
 
 extern "C"
-inline void socket_cb(evutil_socket_t, short, void* const arg) noexcept
+inline void socket_cb(evutil_socket_t const s, short const f,
+  void* const arg) noexcept
 {
-  (*static_cast<gnr::forwarder<void()>*>(arg))();
+  (*static_cast<gnr::forwarder<void(evutil_socket_t, short)>*>(arg))(s, f);
 }
 
 }
@@ -176,9 +177,15 @@ public:
   void suspend() noexcept { set_state<SUSPENDED>(); }
 
   template <class Rep, class Period>
-  bool sleep(std::chrono::duration<Rep, Period> const d) noexcept
+  auto sleep(std::chrono::duration<Rep, Period> const d) noexcept
   {
-    gnr::forwarder<void() noexcept> f([&]() noexcept { state_ = SUSPENDED; });
+    gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
+      [&](evutil_socket_t, short) noexcept
+      {
+        event_base_loopbreak(base);
+        state_ = SUSPENDED;
+      }
+    );
 
     struct event ev;
     event_assign(&ev, base, -1, 0, detail::socket_cb, &f);
@@ -198,16 +205,19 @@ public:
     }
   }
 
-  bool suspend_on(auto&& ...a) noexcept
+  auto suspend_on(auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
-    short fl;
+    evutil_socket_t sck;
+    short fl{};
 
-    gnr::forwarder<void(short) noexcept> f(
-      [&](short const f) noexcept
+    gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
+      [&](evutil_socket_t const s, short const f) noexcept
       {
+        sck = s;
         fl = f;
         state_ = SUSPENDED;
+        event_base_loopbreak(base);
       }
     );
 
@@ -224,7 +234,7 @@ public:
       )
     )
     {
-      return std::pair(true, 0);
+      return std::pair{short{}, evutil_socket_t{-1}};
     }
     else
     {
@@ -232,22 +242,25 @@ public:
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
-      return std::pair<false, fl>;
+      return std::pair{fl, sck};
     }
   }
 
   template <class Rep, class Period>
-  bool suspend_on(std::chrono::duration<Rep, Period> const d,
+  auto suspend_on(std::chrono::duration<Rep, Period> const d,
     auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
+    evutil_socket_t sck;
     short fl;
 
-    gnr::forwarder<void(short) noexcept> f(
-      [&](short const fl) noexcept
+    gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
+      [&](evutil_socket_t const s, short const f) noexcept
       {
+        sck = s;
         fl = f;
         state_ = SUSPENDED;
+        event_base_loopbreak(base);
       }
     );
 
@@ -269,7 +282,7 @@ public:
       )
     )
     {
-      return std::pair(true, 0);
+      return std::pair{short{}, evutil_socket_t{-1}};
     }
     else
     {
@@ -277,7 +290,7 @@ public:
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
-      return std::pair<false, fl>;
+      return std::pair{fl, sck};
     }
   }
 
