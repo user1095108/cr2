@@ -3,10 +3,9 @@
 # pragma once
 
 #include <cassert>
-#include <cstddef>
-#include <functional>
-#include <memory>
-#include <type_traits>
+#include <cstddef> // std::size_t
+#include <functional> // std::function
+#include <memory> // std::unique_ptr
 
 #include "generic/forwarder.hpp"
 #include "generic/invoke.hpp"
@@ -262,7 +261,11 @@ decltype(auto) await(auto&& ...c)
   noexcept(noexcept((detail::retval(c), ...)))
   requires(sizeof...(c) >= 1)
 {
-  while (((((NEW == c.state()) || (SUSPENDED == c.state()) ? c() : void(0)), c) || ...))
+  while ((((
+    (NEW == c.state()) || (SUSPENDED == c.state()) ?
+    c() :
+    void(0)), c) || ...)
+  )
   {
     event_base_loop(base, EVLOOP_NONBLOCK); // process events
   }

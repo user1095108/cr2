@@ -35,7 +35,7 @@ int main()
   cr2::coroutine c2(
     [](auto& c)
     {
-      c.suspend_on(EV_CLOSED|EV_READ, STDIN_FILENO);
+      c.suspend_on(EV_READ, STDIN_FILENO);
       std::cout << "coro2\n";
     }
   );
