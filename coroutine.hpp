@@ -24,7 +24,7 @@ static inline struct event_base* base;
 
 template <std::size_t = default_stack_size> auto make_coroutine(auto&&);
 
-template <typename F, std::size_t S>
+template <typename F, typename R, std::size_t S>
 class coroutine
 {
 private:
@@ -36,7 +36,6 @@ private:
 
   enum state state_;
 
-  using R = decltype(std::declval<F>()(std::declval<coroutine&>()));
   std::conditional_t<std::is_void_v<R>, void*, R> r_;
 
   F f_;
@@ -137,7 +136,7 @@ public:
   }
 
   //
-  template <typename R, bool Tuple = false>
+  template <bool Tuple = false>
   decltype(auto) retval() const
     noexcept(
       std::is_void_v<R> ||
@@ -168,8 +167,8 @@ public:
   void pause() noexcept { set_state<PAUSED>(); }
   void suspend() noexcept { set_state<SUSPENDED>(); }
 
-  template <typename A, std::size_t B>
-  void suspend_to(coroutine<A, B>& c) noexcept
+  template <typename A, typename B, std::size_t C>
+  void suspend_to(coroutine<A, B, C>& c) noexcept
   {
     if (state_ = SUSPENDED; savestate(in_))
     {
@@ -188,9 +187,11 @@ public:
 template <std::size_t S>
 auto make_coroutine(auto&& f)
 {
-  return coroutine<std::remove_cvref_t<decltype(f)>, S>(
-    std::forward<decltype(f)>(f)
-  );
+  using F = std::remove_cvref_t<decltype(f)>;
+  using R = decltype(std::declval<decltype(f)>()(std::declval<coroutine<F, void, S>&>()));
+  using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
+
+  return C(std::forward<decltype(f)>(f));
 }
 
 namespace detail
@@ -202,19 +203,17 @@ inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
 
-template <bool Tuple = false, typename F, std::size_t S>
-inline decltype(auto) retval(coroutine<F, S>& c)
-  noexcept(
-    noexcept(c.template retval<decltype(std::declval<F>()(c)), Tuple>())
-  )
+template <bool Tuple = false, typename F, typename R, std::size_t S>
+inline decltype(auto) retval(coroutine<F, R, S>& c)
+  noexcept(noexcept(c.template retval<Tuple>()))
 {
-  return c.template retval<decltype(std::declval<F>()(c)), Tuple>();
+  return c.template retval<Tuple>();
 }
 
 }
 
-template <typename F, std::size_t S>
-inline bool coroutine<F, S>::suspend_on(auto&& ...a) noexcept
+template <typename F, typename R, std::size_t S>
+inline bool coroutine<F, R, S>::suspend_on(auto&& ...a) noexcept
 {
   gnr::forwarder<void() noexcept> f(
     [&]() noexcept
