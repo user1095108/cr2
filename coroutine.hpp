@@ -51,9 +51,6 @@ private:
 
   alignas(std::max_align_t) void* stack_[N];
 
-  coroutine(coroutine const&) = delete;
-  coroutine(coroutine&&) = default;
-
   void __attribute__((noinline)) execute() noexcept
   {
     if constexpr(std::is_void_v<R>)
@@ -91,6 +88,9 @@ public:
       cr2::base = event_base_new();
     }
   }
+
+  coroutine(coroutine const&) = delete;
+  coroutine(coroutine&&) = default;
 
   explicit operator bool() const noexcept { return bool(state_); }
 
@@ -175,7 +175,32 @@ public:
   void pause() noexcept { set_state<PAUSED>(); }
   void suspend() noexcept { set_state<SUSPENDED>(); }
 
-  bool suspend_on(auto&& ...a) noexcept
+  template <class Rep, class Period>
+  bool sleep(std::chrono::duration<Rep, Period> const d) noexcept
+  {
+    gnr::forwarder<void() noexcept> f([&]() noexcept { state_ = SUSPENDED; });
+
+    struct event ev;
+    event_assign(&ev, base, -1, 0, detail::socket_cb, &f);
+
+    struct timeval tv;
+    tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
+    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+      d - std::chrono::floor<std::chrono::seconds>(d)).count();
+
+    if (-1 == event_add(&ev, &tv))
+    {
+      return true;
+    }
+    else
+    {
+      return pause(), false;
+    }
+  }
+
+  template <class Rep, class Period>
+  bool suspend_on(std::chrono::duration<Rep, Period> const d,
+    auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     gnr::forwarder<void() noexcept> f(
@@ -188,14 +213,19 @@ public:
       }
     );
 
+    struct timeval tv;
+    tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
+    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+      d - std::chrono::floor<std::chrono::seconds>(d)).count();
+
     struct event ev[sizeof...(a) / 2];
 
     if (gnr::invoke_split_cond<2>(
-        [evp(&*ev), &f, this](auto&& flags, auto&& fd) mutable noexcept
+        [this, evp(&*ev), &f, &tv](auto&& flags, auto&& fd) mutable noexcept
         {
           event_assign(evp, base, fd, flags, detail::socket_cb, &f);
 
-          return -1 == event_add(evp++, {});
+          return -1 == event_add(evp++, &tv);
         },
         std::forward<decltype(a)>(a)...
       )
@@ -224,29 +254,6 @@ public:
     {
       c();
       restorestate(out_);
-    }
-  }
-
-  template <class Rep, class Period>
-  bool sleep(std::chrono::duration<Rep, Period> const d) noexcept
-  {
-    gnr::forwarder<void() noexcept> f([&]() noexcept { state_ = SUSPENDED; });
-
-    struct event ev;
-    event_assign(&ev, base, -1, 0, detail::socket_cb, &f);
-
-    struct timeval tv;
-    tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
-    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
-      d - std::chrono::floor<std::chrono::seconds>(d)).count();
-
-    if (-1 == event_add(&ev, &tv))
-    {
-      return true;
-    }
-    else
-    {
-      return pause(), false;
     }
   }
 };
@@ -304,7 +311,7 @@ decltype(auto) run(auto&& ...c)
       ...
     );
 
-    if (p || r)
+    if (r || p)
     {
       event_base_loop(base, r ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
     }
