@@ -9,7 +9,7 @@ using namespace std::literals::string_literals;
 
 int main()
 {
-  auto c0(cr2::make_coroutine<128>(
+  auto c0(cr2::make_plain<128>(
       [](auto& c)
       {
         std::intmax_t j(10);
@@ -27,7 +27,7 @@ int main()
     )
   );
 
-  auto c1(cr2::make_coroutine<512>(
+  auto c1(cr2::make_plain<512>(
       [&](auto& c)
       {
         evutil_socket_t sck;

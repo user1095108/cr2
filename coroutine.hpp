@@ -297,7 +297,7 @@ public:
 };
 
 template <std::size_t S = default_stack_size>
-auto make_coroutine(auto&& f)
+auto make_plain(auto&& f)
 {
   using F = std::remove_cvref_t<decltype(f)>;
   using R = decltype(
@@ -332,7 +332,7 @@ auto make_unique(auto&& f)
   return std::make_unique<C>(std::forward<decltype(f)>(f));
 }
 
-decltype(auto) run(auto&& ...c)
+auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
@@ -378,6 +378,19 @@ decltype(auto) run(auto&& ...c)
   {
     return (c, ...).template retval<>();
   }
+}
+
+auto make_and_run(auto&& ...c)
+  noexcept(noexcept(run(make_plain(std::forward<decltype(c)>(c))...)))
+{
+  return run(make_plain(std::forward<decltype(c)>(c))...);
+}
+
+template <std::size_t ...S>
+auto make_and_run(auto&& ...c)
+  noexcept(noexcept(run(make_plain(std::forward<decltype(c)>(c))...)))
+{
+  return run(make_plain<S>(std::forward<decltype(c)>(c))...);
 }
 
 }

@@ -12,7 +12,7 @@ struct A
 
 int main()
 {
-  auto c0(cr2::make_coroutine<128>(
+  auto c0(cr2::make_plain<128>(
       [](auto& c)
       {
         for (;;)
@@ -24,27 +24,23 @@ int main()
     )
   );
 
-  cr2::run(
-    cr2::make_coroutine<128>(
-      [&](auto& c)
-      {
-        A a;
+  cr2::make_and_run<128, 128>(
+    [&](auto& c)
+    {
+      A a;
 
-        for (int i{}; i != 3; ++i)
-        {
-          std::cout << i << '\n';
-
-          c.suspend_to(c0);
-        }
-      }
-    ),
-    cr2::make_coroutine<128>(
-      [](auto& c)
+      for (int i{}; i != 3; ++i)
       {
-        c.suspend_on(EV_READ, STDIN_FILENO);
-        std::cout << "coro2\n";
+        std::cout << i << '\n';
+
+        c.suspend_to(c0);
       }
-    )
+    },
+    [](auto& c)
+    {
+      c.suspend_on(EV_READ, STDIN_FILENO);
+      std::cout << "coro2\n";
+    }
   );
 
   return 0;

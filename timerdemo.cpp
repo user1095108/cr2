@@ -6,67 +6,59 @@ int main()
 {
   std::cout <<
     std::get<2>(
-      cr2::run(
-        cr2::make_coroutine<128>(
-          [](auto& c)
+      cr2::make_and_run<128, 128, 128>(
+        [](auto& c)
+        {
+          unsigned i(1);
+
+          do
           {
-            unsigned i(1);
-
-            do
-            {
-              std::cout << "coro0 " << i++ << '\n';
-              c.sleep(std::chrono::seconds(1));
-            }
-            while (10 != i);
+            std::cout << "coro0 " << i++ << '\n';
+            c.sleep(std::chrono::seconds(1));
           }
-        ),
-        cr2::make_coroutine<128>(
-          [](auto& c)
+          while (10 != i);
+        },
+        [](auto& c)
+        {
+          unsigned i(9);
+
+          do
           {
-            unsigned i(9);
-
-            do
-            {
-              std::cout << "coro1 " << i-- << '\n';
-              c.sleep(std::chrono::seconds(1));
-            }
-            while (i);
+            std::cout << "coro1 " << i-- << '\n';
+            c.sleep(std::chrono::seconds(1));
           }
-        ),
-        cr2::make_coroutine<128>(
-          [](auto& c)
+          while (i);
+        },
+        [](auto& c)
+        {
+          std::intmax_t j(5);
+
+          for (auto i(j - 1); 1 != i; --i)
           {
-            std::intmax_t j(5);
-
-            for (auto i(j - 1); 1 != i; --i)
-            {
-              j *= i;
-              c.suspend();
-            }
-
-            return j;
+            j *= i;
+            c.suspend();
           }
-        )
+
+          return j;
+        }
       )
     ) <<
     std::endl;
 
-  cr2::run(
-    cr2::make_coroutine<128>(
-      [&](auto& c)
+  cr2::make_and_run<128>(
+    [&](auto& c)
+    {
+      for (evutil_make_socket_nonblocking(STDIN_FILENO);;)
       {
-        for (evutil_make_socket_nonblocking(STDIN_FILENO);;)
-        {
-          std::cout << "waiting for keypress\n";
-          c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO);
+        std::cout << "waiting for keypress\n";
+        c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO);
 
-          if (char c; 1 == read(STDIN_FILENO, &c, 1))
-          {
-            break;
-          }
+        if (char c; 1 == read(STDIN_FILENO, &c, 1))
+        {
+          break;
         }
       }
-    )
+    }
   );
 
   return 0;
