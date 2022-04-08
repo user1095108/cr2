@@ -182,7 +182,6 @@ public:
     gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
       [&](evutil_socket_t, short) noexcept
       {
-        event_base_loopbreak(base);
         state_ = SUSPENDED;
       }
     );
@@ -209,7 +208,7 @@ public:
     requires(!(sizeof...(a) % 2))
   {
     evutil_socket_t sck;
-    short fl{};
+    short fl;
 
     gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
       [&](evutil_socket_t const s, short const f) noexcept
