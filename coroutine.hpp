@@ -280,7 +280,11 @@ decltype(auto) await(auto&& ...c)
     std::size_t p{}, r{};
 
     (
-      (c.state() >= NEW ? ++r, c() : (c.state() == PAUSED ? void(++p) : void(0))),
+      (
+        c.state() >= NEW ?
+          ++r, c() :
+          void(c.state() == PAUSED ? ++p : 0)
+      ),
       ...
     );
 
