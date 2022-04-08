@@ -69,7 +69,13 @@ public:
     {
       clobber_all();
     }
-    else if (NEW == state())
+    else if (SUSPENDED == state_)
+    {
+      state_ = RUNNING;
+
+      restorestate(in_); // return inside
+    }
+    else
     {
       state_ = RUNNING;
 
@@ -112,12 +118,6 @@ public:
       state_ = DEAD;
 
       restorestate(out_); // return outside
-    }
-    else if (SUSPENDED == state_)
-    {
-      state_ = RUNNING;
-
-      restorestate(in_); // return inside
     }
   }
 
