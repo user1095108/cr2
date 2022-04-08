@@ -2,10 +2,7 @@
 # define COROUTINE_HPP
 # pragma once
 
-#include <cassert>
 #include <cstddef> // std::size_t
-#include <any>
-#include <functional> // std::function
 #include <memory> // std::unique_ptr
 
 #include "generic/forwarder.hpp"
@@ -42,10 +39,10 @@ private:
   using R = decltype(std::declval<F>()(std::declval<coroutine&>()));
   std::conditional_t<std::is_void_v<R>, void*, R> r_;
 
-  std::function<R(coroutine&)> f_;
+  F f_;
 
-  //alignas(std::max_align_t) void* stack_[N];
-  std::unique_ptr<void*[]> stack_{::new void*[N]};
+  alignas(std::max_align_t) void* stack_[N];
+  //std::unique_ptr<void*[]> stack_{::new void*[N]};
 
   explicit coroutine(F&& f):
     state_{NEW},
@@ -62,6 +59,18 @@ private:
 
 public:
   explicit operator bool() const noexcept { return bool(state_); }
+
+  void __attribute__((noinline)) execute() noexcept
+  {
+    if constexpr(std::is_void_v<R>)
+    {
+      f_(*this);
+    }
+    else
+    {
+      r_ = f_(*this);
+    }
+  }
 
   void __attribute__((noinline)) operator()() noexcept
   {
@@ -106,14 +115,7 @@ public:
 # error "can't switch stack frame"
 #endif
 
-      if constexpr(std::is_void_v<R>)
-      {
-        f_(*this);
-      }
-      else
-      {
-        r_ = f_(*this);
-      }
+      execute();
 
       state_ = DEAD;
 
