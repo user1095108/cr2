@@ -57,6 +57,19 @@ private:
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
 
+  template <auto S>
+  void set_state() noexcept
+  {
+    if (state_ = S; savestate(in_))
+    {
+      clobber_all()
+    }
+    else
+    {
+      restorestate(out_);
+    }
+  }
+
 public:
   explicit operator bool() const noexcept { return bool(state_); }
 
@@ -153,29 +166,9 @@ public:
   //
   void reset() noexcept { state_ = NEW; }
 
-  void pause() noexcept
-  {
-    if (state_ = PAUSED; savestate(in_))
-    {
-      clobber_all()
-    }
-    else
-    {
-      restorestate(out_);
-    }
-  }
+  void pause() noexcept { set_state<PAUSED>(); }
 
-  void suspend() noexcept
-  {
-    if (state_ = SUSPENDED; savestate(in_))
-    {
-      clobber_all()
-    }
-    else
-    {
-      restorestate(out_);
-    }
-  }
+  void suspend() noexcept { set_state<SUSPENDED>(); }
 
   template <typename A, std::size_t B>
   void suspend_to(coroutine<A, B>& c) noexcept
