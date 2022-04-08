@@ -24,7 +24,8 @@ int main()
     )
   );
 
-  auto c1(cr2::make_coroutine(
+  cr2::await(
+    cr2::make_coroutine(
       [&](auto& c)
       {
         A a;
@@ -36,10 +37,8 @@ int main()
           c.suspend_to(c0);
         }
       }
-    )
-  );
-
-  auto c2(cr2::make_coroutine<256>(
+    ),
+    cr2::make_coroutine<256>(
       [](auto& c)
       {
         c.suspend_on(EV_READ, STDIN_FILENO);
@@ -47,8 +46,6 @@ int main()
       }
     )
   );
-
-  cr2::await(c1, c2);
 
   return 0;
 }
