@@ -3,6 +3,7 @@
 # pragma once
 
 #include <cstddef> // std::size_t
+#include <chrono>
 #include <memory> // std::unique_ptr
 
 #include "generic/forwarder.hpp"
@@ -18,9 +19,20 @@ namespace cr2
 
 enum : std::size_t { default_stack_size = 1024 };
 
-enum state {DEAD, NEW, RUNNING, SUSPENDED, PAUSED};
+enum state {DEAD, RUNNING, PAUSED, NEW, SUSPENDED};
 
 static inline struct event_base* base;
+
+namespace detail
+{
+
+extern "C"
+inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
+{
+  (*static_cast<gnr::forwarder<void()>*>(arg))();
+}
+
+}
 
 template <std::size_t = default_stack_size> auto make_coroutine(auto&&);
 
@@ -181,7 +193,68 @@ public:
     }
   }
 
-  bool suspend_on(auto&& ...) noexcept;
+  bool suspend_on(auto&& ...a) noexcept
+  {
+    gnr::forwarder<void() noexcept> f(
+      [&]() noexcept
+      {
+        if (PAUSED == state())
+        {
+          state_ = SUSPENDED;
+        }
+      }
+    );
+
+    struct event ev[sizeof...(a)];
+
+    if (auto evp(&*ev); gnr::invoke_split_cond<2>(
+        [&](auto&& flags, auto&& fd) noexcept
+        {
+          event_assign(evp, base, fd, flags, detail::do_cb, &f);
+          return -1 == event_add(evp++, {});
+        },
+        std::forward<decltype(a)>(a)...
+      )
+    )
+    {
+      return true;
+    }
+    else
+    {
+      return pause(), false;
+    }
+  }
+
+  template <class Rep, class Period>
+  bool sleep(std::chrono::duration<Rep, Period> const d) noexcept
+  {
+    gnr::forwarder<void() noexcept> f(
+      [&]() noexcept
+      {
+        if (PAUSED == state())
+        {
+          state_ = SUSPENDED;
+        }
+      }
+    );
+
+    struct event ev;
+    event_assign(&ev, base, -1, 0, detail::do_cb, &f);
+
+    struct timeval tv;
+    tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
+    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+      d - std::chrono::floor<std::chrono::seconds>(d)).count();
+
+    if (-1 == event_add(&ev, &tv))
+    {
+      return true;
+    }
+    else
+    {
+      return pause(), false;
+    }
+  }
 };
 
 template <std::size_t S>
@@ -197,12 +270,6 @@ auto make_coroutine(auto&& f)
 namespace detail
 {
 
-extern "C"
-inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
-{
-  (*static_cast<gnr::forwarder<void()>*>(arg))();
-}
-
 template <bool Tuple = false, typename F, typename R, std::size_t S>
 inline decltype(auto) retval(coroutine<F, R, S>& c)
   noexcept(noexcept(c.template retval<Tuple>()))
@@ -212,49 +279,31 @@ inline decltype(auto) retval(coroutine<F, R, S>& c)
 
 }
 
-template <typename F, typename R, std::size_t S>
-inline bool coroutine<F, R, S>::suspend_on(auto&& ...a) noexcept
-{
-  gnr::forwarder<void() noexcept> f(
-    [&]() noexcept
-    {
-      if (PAUSED == state())
-      {
-        state_ = SUSPENDED;
-      }
-    }
-  );
-
-  struct event ev[sizeof...(a)];
-
-  if (auto evp(&*ev); gnr::invoke_split_cond<2>(
-      [&](auto&& flags, auto&& fd) mutable noexcept
-      {
-        event_assign(evp, base, fd, flags, detail::do_cb, &f);
-        return -1 == event_add(evp++, {});
-      },
-      std::forward<decltype(a)>(a)...
-    )
-  )
-  {
-    return true;
-  }
-  else
-  {
-    return pause(), false;
-  }
-}
-
 decltype(auto) await(auto&& ...c)
   noexcept(noexcept((detail::retval(c), ...)))
   requires(sizeof...(c) >= 1)
 {
-  while ((
-    (((NEW == c.state()) || (SUSPENDED == c.state()) ?  c() : void(0)), c) ||
-    ...)
-  )
+  for (;;)
   {
-    event_base_loop(base, EVLOOP_NONBLOCK); // process events
+    std::size_t r{}, p{};
+
+    (
+      (c.state() >= NEW ? ++r, c() : (c.state() == PAUSED ? void(++p) : void(0))),
+      ...
+    );
+
+    if (r)
+    {
+      event_base_loop(base, EVLOOP_NONBLOCK); // process events
+    }
+    else if (p)
+    {
+      event_base_loop(base, EVLOOP_ONCE); // process events
+    }
+    else
+    {
+      break;
+    }
   }
 
   auto const reset_all(
