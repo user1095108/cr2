@@ -198,6 +198,44 @@ public:
     }
   }
 
+  bool suspend_on(auto&& ...a) noexcept
+    requires(!(sizeof...(a) % 2))
+  {
+    gnr::forwarder<void() noexcept> f(
+      [&]() noexcept
+      {
+        if (PAUSED == state())
+        {
+          state_ = SUSPENDED;
+        }
+      }
+    );
+
+    struct event ev[sizeof...(a) / 2];
+
+    if (gnr::invoke_split_cond<2>(
+        [this, evp(&*ev), &f](auto&& flags, auto&& fd) mutable noexcept
+        {
+          event_assign(evp, base, fd, flags, detail::socket_cb, &f);
+
+          return -1 == event_add(evp++, {});
+        },
+        std::forward<decltype(a)>(a)...
+      )
+    )
+    {
+      return true;
+    }
+    else
+    {
+      pause();
+
+      std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
+
+      return false;
+    }
+  }
+
   template <class Rep, class Period>
   bool suspend_on(std::chrono::duration<Rep, Period> const d,
     auto&& ...a) noexcept
