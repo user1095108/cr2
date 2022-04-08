@@ -95,17 +95,15 @@ public:
     {
       clobber_all();
     }
+    else if (SUSPENDED == state_)
+    {
+      state_ = RUNNING;
+
+      restorestate(in_); // return inside
+    }
     else
     {
-      if (SUSPENDED == state_)
-      {
-        state_ = RUNNING;
-
-        restorestate(in_); // return inside
-      }
-      else
-      {
-        state_ = RUNNING;
+      state_ = RUNNING;
 
 #if defined(__GNUC__)
 # if defined(i386) || defined(__i386) || defined(__i386__)
@@ -136,7 +134,6 @@ public:
 
       execute();
     }
-  }
   }
 
   //
