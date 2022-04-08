@@ -57,10 +57,10 @@ private:
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
 
-  template <auto S>
+  template <enum state State>
   void set_state() noexcept
   {
-    if (state_ = S; savestate(in_))
+    if (state_ = State; savestate(in_))
     {
       clobber_all()
     }
