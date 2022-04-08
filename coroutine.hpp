@@ -9,6 +9,7 @@
 #include <type_traits>
 
 #include "generic/forwarder.hpp"
+#include "generic/invoke.hpp"
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
 
@@ -190,7 +191,7 @@ public:
     }
   }
 
-  bool suspend_on(short, auto const...) noexcept;
+  bool suspend_on(auto&& ...) noexcept;
 
   template <typename U>
   void suspend_to(coroutine<U>& c) noexcept
@@ -225,8 +226,7 @@ decltype(auto) retval(coroutine<F>& c) noexcept
 }
 
 template <typename F>
-inline bool coroutine<F>::suspend_on(short const flags,
-  auto const ...fd) noexcept
+inline bool coroutine<F>::suspend_on(auto&& ...a) noexcept
 {
   gnr::forwarder<void() noexcept> f(
     [&]() noexcept
@@ -239,17 +239,17 @@ inline bool coroutine<F>::suspend_on(short const flags,
     }
   );
 
-  if (struct event ev[sizeof...(fd)];
-    [&]<auto ...I>(std::index_sequence<I...>) noexcept
-    {
-      return (
-        (
-          event_assign(&ev[I], base, fd, flags, detail::do_cb, &f),
-          (-1 == event_add(&ev[I], {}))
-        ) ||
-        ...
-      );
-    }(std::make_index_sequence<sizeof...(fd)>())
+  struct event ev[sizeof...(a)];
+
+  if (gnr::invoke_split_cond<2>(
+      [evp(&*ev), &f](auto&& flags, auto&& fd) mutable noexcept
+      {
+        event_assign(evp, base, fd, flags, detail::do_cb, &f);
+
+        return -1 == event_add(evp++, {});
+      },
+      std::forward<decltype(a)>(a)...
+    )
   )
   {
     return true;
