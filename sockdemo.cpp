@@ -9,98 +9,94 @@ using namespace std::literals::string_literals;
 
 int main()
 {
-  std::tuple<std::intmax_t, std::string> t;
+  auto c0(cr2::make_coroutine(
+      [](auto& c) -> std::intmax_t
+      {
+        std::intmax_t j(10);
 
-  {
-    auto c0(cr2::make_coroutine(
-        [](auto& c) -> std::intmax_t
+        for (auto i(j - 1); 1 != i; --i)
         {
-          std::intmax_t j(10);
+          std::cout << "coro0\n";
 
-          for (auto i(j - 1); 1 != i; --i)
-          {
-            std::cout << "coro0\n";
-
-            j *= i;
-            c.suspend();
-          }
-
-          return j;
+          j *= i;
+          c.suspend();
         }
-      )
-    );
 
-    auto c1(cr2::make_coroutine(
-        [&](auto& c) -> std::string
+        return j;
+      }
+    )
+  );
+
+  auto c1(cr2::make_coroutine(
+      [&](auto& c) -> std::string
+      {
+        evutil_socket_t sck;
+
+        if (-1 == (sck = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)))
         {
-          evutil_socket_t sck;
+          return "socket()"s;
+        }
 
-          if (-1 == (sck = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)))
+        SCOPE_EXIT(&, evutil_closesocket(sck));
+
+        evutil_make_socket_nonblocking(sck);
+
+        {
+          struct sockaddr_in sin;
+          sin.sin_family = AF_INET;
+          sin.sin_port = htons(7777);
+
+          if (-1 == inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr))
           {
-            return "socket()"s;
+            return "inet_pton()"s;
           }
 
-          SCOPE_EXIT(&, evutil_closesocket(sck));
-
-          evutil_make_socket_nonblocking(sck);
-
+          if (-1 == connect(sck, reinterpret_cast<sockaddr*>(&sin),
+            sizeof(sin)))
           {
-            struct sockaddr_in sin;
-            sin.sin_family = AF_INET;
-            sin.sin_port = htons(7777);
-
-            if (-1 == inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr))
+            if (EINPROGRESS != errno)
             {
-              return "inet_pton()"s;
-            }
-
-            if (-1 == connect(sck, reinterpret_cast<sockaddr*>(&sin),
-              sizeof(sin)))
-            {
-              if (EINPROGRESS != errno)
-              {
-                return "connect()"s;
-              }
+              return "connect()"s;
             }
           }
+        }
 
-          std::string s;
+        std::string s;
 
-          for (char buf[128];;)
+        for (char buf[128];;)
+        {
+          std::cout << "coro1\n";
+
+          if (int sz; -1 == (sz = recv(sck, buf, sizeof(buf), 0)))
           {
-            std::cout << "coro1\n";
-
-            if (int sz; -1 == (sz = recv(sck, buf, sizeof(buf), 0)))
+            if ((EAGAIN == errno) || (EWOULDBLOCK == errno))
             {
-              if ((EAGAIN == errno) || (EWOULDBLOCK == errno))
-              {
-                std::cout << "pausing\n";
-                c.suspend_on(EV_CLOSED|EV_READ, sck);
+              std::cout << "pausing\n";
+              c.suspend_on(EV_CLOSED|EV_READ, sck);
 
-                continue;
-              }
-              else
-              {
-                return "recv(): "s + std::strerror(errno);
-              }
-            }
-            else if (sz)
-            {
-              s.append(buf, sz);
+              continue;
             }
             else
             {
-              break;
+              return "recv(): "s + std::strerror(errno);
             }
           }
-
-          return s;
+          else if (sz)
+          {
+            s.append(buf, sz);
+          }
+          else
+          {
+            break;
+          }
         }
-      )
-    );
 
-    t = cr2::await(c0, c1);
-  }
+        return s;
+      }
+    )
+  );
+
+  auto const t(cr2::await(c0, c1));
 
   std::cout << std::get<1>(t) << std::endl;
   std::cout << std::get<0>(t) << std::endl;

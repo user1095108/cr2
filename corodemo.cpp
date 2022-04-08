@@ -6,7 +6,7 @@ struct A
 {
   ~A()
   {
-    std::cout << "destroyed" << std::endl;
+    std::cout << "destroyed\n";
   }
 };
 
