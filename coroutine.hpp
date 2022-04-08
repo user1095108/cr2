@@ -12,10 +12,6 @@
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-
 #include <event2/event.h>
 #include <event2/event_struct.h>
 
@@ -24,7 +20,9 @@ namespace cr2
 
 enum : std::size_t { default_stack_size = 1024 * 1024 };
 
-enum state {DEAD, NEW, RUNNING, SUSPENDED};
+enum state {DEAD, NEW, RUNNING, SUSPENDED, PAUSED};
+
+static inline struct event_base* base;
 
 namespace detail
 {
@@ -45,110 +43,15 @@ private:
   void* r_;
 
   std::unique_ptr<void*[]> stack_;
-  void* sp_;
+  std::size_t const N_;
 
 public:
-  coroutine(std::size_t const s):
-    stack_{::new void*[s / sizeof(void*)]},
-    sp_{&stack_[s / sizeof(void*)]}
+  explicit coroutine(F&& f, std::size_t const s = default_stack_size):
+    state_{NEW},
+    N_(s / sizeof(void*))
   {
-  }
+    cr2::base = cr2::base ? cr2::base : event_base_new();
 
-  explicit coroutine(auto&& f, std::size_t const s = default_stack_size):
-    stack_{::new void*[s / sizeof(void*)]},
-    sp_{&stack_[s / sizeof(void*)]}
-  {
-    assign(std::forward<decltype(f)>(f));
-  }
-
-  coroutine(coroutine const&) = delete;
-  coroutine(coroutine&&) = default;
-
-  //
-  explicit operator bool() const noexcept { return bool(state_); }
-
-  void __attribute__ ((noinline)) operator()() noexcept
-  {
-    if (savestate(out_))
-    {
-      clobber_all();
-    }
-    else if (SUSPENDED == state_)
-    {
-      state_ = RUNNING;
-      restorestate(in_); // return inside
-    }
-    else
-    {
-      state_ = RUNNING;
-
-#if defined(__GNUC__)
-# if defined(i386) || defined(__i386) || defined(__i386__)
-      asm volatile(
-        "movl %0, %%esp"
-        :
-        : "r" (sp_)
-      );
-# elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) ||\
-    defined(__x86_64)
-      asm volatile(
-        "movq %0, %%rsp"
-        :
-        : "r" (sp_)
-      );
-# elif defined(__aarch64__) || defined(__arm__)
-      asm volatile(
-        "mov sp, %0"
-        :
-        : "r" (sp_)
-      );
-# else
-#   error "can't switch stack frame"
-# endif
-#else
-# error "can't switch stack frame"
-#endif
-
-      f_(*this);
-
-      state_ = DEAD;
-      restorestate(out_); // return outside
-    }
-  }
-
-  //
-  template <typename R>
-  decltype(auto) retval() const
-    noexcept(
-      std::is_void_v<R> ||
-      std::is_pointer_v<R> ||
-      std::is_reference_v<R> ||
-      std::is_nothrow_move_constructible_v<R>
-    )
-  {
-    if constexpr(std::is_void_v<R>)
-    {
-      return;
-    }
-    else if constexpr(std::is_pointer_v<R>)
-    {
-      return static_cast<R>(r_);
-    }
-    else if constexpr(std::is_reference_v<R>)
-    {
-      return R(*static_cast<std::remove_reference_t<R>*>(r_));
-    }
-    else
-    {
-      return *static_cast<R*>(r_);
-    }
-  }
-
-  auto state() const noexcept { return state_; }
-
-  //
-  void assign(auto&& f)
-  {
     using R = decltype(f(*this));
 
     if constexpr(std::is_void_v<R>)
@@ -178,13 +81,103 @@ public:
           r = f(c);
         };
     }
-
-    state_ = NEW;
   }
 
-  void reset() noexcept { state_ = NEW; }
+  coroutine(coroutine const&) = delete;
+  coroutine(coroutine&&) = default;
 
-  void suspend() noexcept
+  //
+  explicit operator bool() const noexcept { return bool(state_); }
+
+  void __attribute__ ((noinline)) operator()() noexcept
+  {
+    if (savestate(out_))
+    {
+      clobber_all();
+    }
+    else if (SUSPENDED == state_)
+    {
+      state_ = RUNNING;
+      restorestate(in_); // return inside
+    }
+    else
+    {
+      stack_.reset(::new void*[N_]);
+      state_ = RUNNING;
+
+#if defined(__GNUC__)
+# if defined(i386) || defined(__i386) || defined(__i386__)
+      asm volatile(
+        "movl %0, %%esp"
+        :
+        : "r" (&stack_[N_])
+      );
+# elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) ||\
+    defined(__x86_64)
+      asm volatile(
+        "movq %0, %%rsp"
+        :
+        : "r" (&stack_[N_])
+      );
+# elif defined(__aarch64__) || defined(__arm__)
+      asm volatile(
+        "mov sp, %0"
+        :
+        : "r" (&stack_[N_])
+      );
+# else
+#   error "can't switch stack frame"
+# endif
+#else
+# error "can't switch stack frame"
+#endif
+
+      f_(*this);
+
+      state_ = DEAD;
+
+      restorestate(out_); // return outside
+    }
+  }
+
+  //
+  template <typename R, bool Tuple = false>
+  decltype(auto) retval() const
+    noexcept(
+      std::is_void_v<R> ||
+      std::is_pointer_v<R> ||
+      std::is_reference_v<R> ||
+      std::is_nothrow_move_constructible_v<R>
+    )
+  {
+    if constexpr(std::is_void_v<R> && !Tuple)
+    {
+      return;
+    }
+    else if constexpr(std::is_void_v<R> && Tuple)
+    {
+      return detail::empty_t{};
+    }
+    else if constexpr(std::is_pointer_v<R>)
+    {
+      return static_cast<R>(r_);
+    }
+    else if constexpr(std::is_reference_v<R>)
+    {
+      return R(*static_cast<std::remove_reference_t<R>*>(r_));
+    }
+    else
+    {
+      return R(std::move(*static_cast<R*>(r_)));
+    }
+  }
+
+  auto state() const noexcept { return state_; }
+
+  //
+  void reset() noexcept { stack_.reset(); state_ = NEW; }
+
+  void suspend(enum state const state = SUSPENDED) noexcept
   {
     if (savestate(in_))
     {
@@ -192,12 +185,12 @@ public:
     }
     else
     {
-      state_ = SUSPENDED;
+      state_ = state;
       restorestate(out_);
     }
   }
 
-  bool suspend_on(struct event_base*, short, auto const...) noexcept;
+  bool suspend_on(short, auto const...) noexcept;
 
   template <typename U>
   void suspend_to(coroutine<U>& c) noexcept
@@ -214,19 +207,6 @@ public:
   }
 };
 
-auto make(auto&& f, std::size_t const sz = cr2::default_stack_size)
-{
-  return coroutine<decltype(f)>(std::forward<decltype(f)>(f), sz);
-}
-
-template <typename F>
-decltype(auto) retval(coroutine<F>& c) noexcept
-{
-  using R = decltype(std::declval<F>()(c));
-
-  return c.template retval<R>();
-}
-
 namespace detail
 {
 
@@ -236,17 +216,26 @@ inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
 
+template <bool Tuple = false, typename F>
+decltype(auto) retval(coroutine<F>& c) noexcept
+{
+  return c.template retval<decltype(std::declval<F>()(c)), Tuple>();
+}
+
 }
 
 template <typename F>
-inline bool coroutine<F>::suspend_on(struct event_base* const base,
-  short const flags, auto const ...fd) noexcept
+inline bool coroutine<F>::suspend_on(short const flags,
+  auto const ...fd) noexcept
 {
   gnr::forwarder<void() noexcept> f(
     [&]() noexcept
     {
-      event_base_loopbreak(base);
-      (*this)();
+      if (PAUSED == state())
+      {
+        state_ = SUSPENDED;
+        (*this)();
+      }
     }
   );
 
@@ -267,7 +256,38 @@ inline bool coroutine<F>::suspend_on(struct event_base* const base,
   }
   else
   {
-    return suspend(), false;
+    return suspend(PAUSED), false;
+  }
+}
+
+decltype(auto) await(auto&& ...c)
+  requires(sizeof...(c) >= 1)
+{
+  while ((c || ...)) // while any c are still alive
+  {
+    (((NEW == c.state()) || (SUSPENDED == c.state()) ? c() : void(0)), ...);
+
+    event_base_loop(base, EVLOOP_NONBLOCK); // process events
+  }
+
+  auto const reset_all(
+    [&]() noexcept
+    {
+      (c.reset(), ...);
+    }
+  );
+
+  SCOPE_EXIT(&, reset_all());
+
+  if constexpr(sizeof...(c) > 1)
+  {
+    return std::tuple<decltype(detail::retval<true>(c))...>{
+      detail::retval<true>(c)...
+    };
+  }
+  else
+  {
+    return detail::retval((c, ...));
   }
 }
 

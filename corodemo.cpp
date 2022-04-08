@@ -12,44 +12,44 @@ struct A
 
 int main()
 {
-  auto c0(cr2::make(
-      [](auto& c)
+  cr2::coroutine c0(
+    [](auto& c)
+    {
+      for (;;)
       {
-        for (;;)
-        {
-          std::cout << "hi!\n";
-          c.suspend();
-        }
+        std::cout << "hi!\n";
+        c.suspend();
       }
-    )
+    }
   );
 
-  auto c1(cr2::make(
-      [&](auto& c)
+  cr2::coroutine c1(
+    [&](auto& c)
+    {
+      c.suspend_to(c0);
+
+      A a;
+
+      for (int i{}; i != 3; ++i)
       {
-        c.suspend_to(c0);
+        std::cout << i << std::endl;
 
-        A a;
-
-        for (int i{}; i != 3; ++i)
-        {
-          std::cout << i << std::endl;
-
-          c.suspend();
-        }
-
-        c.suspend_to(c0);
+        c.suspend();
       }
-    )
+
+      c.suspend_to(c0);
+    }
   );
 
-  for (c1(); c1;)
-  {
-    std::cout << "resuming" << std::endl;
-    c1();
-  }
+  cr2::coroutine c2(
+    [](auto& c)
+    {
+      c.suspend_on(EV_CLOSED|EV_READ, STDIN_FILENO);
+      std::cout << "coro2\n";
+    }
+  );
 
-  std::cin.ignore();
+  cr2::await(c1, c2);
 
   return 0;
 }
