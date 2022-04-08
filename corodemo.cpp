@@ -25,7 +25,7 @@ int main()
   );
 
   cr2::run(
-    *cr2::make_unique(
+    cr2::make_coroutine<128>(
       [&](auto& c)
       {
         A a;
@@ -38,7 +38,7 @@ int main()
         }
       }
     ),
-    cr2::make_coroutine<256>(
+    cr2::make_coroutine<128>(
       [](auto& c)
       {
         c.suspend_on(EV_READ, STDIN_FILENO);
