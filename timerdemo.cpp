@@ -55,9 +55,7 @@ int main()
     cr2::make_coroutine<128>(
       [&](auto& c)
       {
-        evutil_make_socket_nonblocking(STDIN_FILENO);
-
-        for (;;)
+        for (evutil_make_socket_nonblocking(STDIN_FILENO);;)
         {
           std::cout << "waiting for keypress\n";
           c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO);
