@@ -25,13 +25,6 @@ enum state {DEAD, NEW, RUNNING, SUSPENDED, PAUSED};
 
 static inline struct event_base* base;
 
-namespace detail
-{
-
-struct empty_t{};
-
-}
-
 template <typename F>
 class coroutine
 {
@@ -99,6 +92,7 @@ public:
     else if (SUSPENDED == state_)
     {
       state_ = RUNNING;
+
       restorestate(in_); // return inside
     }
     else
@@ -158,7 +152,8 @@ public:
     }
     else if constexpr(std::is_void_v<R> && Tuple)
     {
-      return detail::empty_t{};
+      struct empty_t{};
+      return empty_t{};
     }
     else if constexpr(std::is_pointer_v<R>)
     {
@@ -249,7 +244,6 @@ inline bool coroutine<F>::suspend_on(auto&& ...a) noexcept
       [evp(&*ev), &f](auto&& flags, auto&& fd) mutable noexcept
       {
         event_assign(evp, base, fd, flags, detail::do_cb, &f);
-
         return -1 == event_add(evp++, {});
       },
       std::forward<decltype(a)>(a)...
@@ -265,6 +259,7 @@ inline bool coroutine<F>::suspend_on(auto&& ...a) noexcept
 }
 
 decltype(auto) await(auto&& ...c)
+  noexcept(noexcept((detail::retval(c), ...)))
   requires(sizeof...(c) >= 1)
 {
   while ((c || ...)) // while any c are still alive
