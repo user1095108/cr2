@@ -176,6 +176,7 @@ public:
   void suspend() noexcept { set_state<SUSPENDED>(); }
 
   bool suspend_on(auto&& ...a) noexcept
+    requires(!(sizeof...(a) % 2))
   {
     gnr::forwarder<void() noexcept> f(
       [&]() noexcept
@@ -189,8 +190,8 @@ public:
 
     struct event ev[sizeof...(a) / 2];
 
-    if (auto evp(&*ev); gnr::invoke_split_cond<2>(
-        [&](auto&& flags, auto&& fd) noexcept
+    if (gnr::invoke_split_cond<2>(
+        [evp(&*ev), &f, this](auto&& flags, auto&& fd) mutable noexcept
         {
           event_assign(evp, base, fd, flags, detail::socket_cb, &f);
 
