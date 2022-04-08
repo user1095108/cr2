@@ -103,8 +103,9 @@ public:
     }
     else
     {
-      stack_.reset(::new void*[N_]);
       state_ = RUNNING;
+
+      stack_.reset(::new void*[N_]);
 
 #if defined(__GNUC__)
 # if defined(i386) || defined(__i386) || defined(__i386__)
@@ -218,7 +219,10 @@ inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
 }
 
 template <bool Tuple = false, typename F>
-decltype(auto) retval(coroutine<F>& c) noexcept
+inline decltype(auto) retval(coroutine<F>& c)
+  noexcept(
+    noexcept(c.template retval<decltype(std::declval<F>()(c)), Tuple>())
+  )
 {
   return c.template retval<decltype(std::declval<F>()(c)), Tuple>();
 }
