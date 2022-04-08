@@ -150,9 +150,7 @@ public:
 
   void pause() noexcept
   {
-    state_ = PAUSED;
-
-    if (savestate(in_))
+    if (state_ = PAUSED; savestate(in_))
     {
       clobber_all()
     }
