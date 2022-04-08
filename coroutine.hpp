@@ -80,7 +80,8 @@ private:
   }
 
 public:
-  explicit coroutine(F&& f):
+  explicit coroutine(F&& f)
+    noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
     state_{NEW},
     f_(std::move(f))
   {
@@ -310,12 +311,22 @@ public:
 
 template <std::size_t S = default_stack_size>
 auto make_plain(auto&& f)
+  noexcept(noexcept(
+      coroutine<
+        std::remove_cvref_t<decltype(f)>,
+        decltype(std::declval<std::remove_cvref_t<decltype(f)>>()(
+          std::declval<coroutine<std::remove_cvref_t<decltype(f)>, void, S>&>()
+        )),
+        S
+      >(std::forward<decltype(f)>(f))
+    )
+  )
 {
   using F = std::remove_cvref_t<decltype(f)>;
   using R = decltype(
     std::declval<F>()(std::declval<coroutine<F, void, S>&>())
   );
-  using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
+  using C = coroutine<F, R, S>;
 
   return C(std::forward<decltype(f)>(f));
 }
