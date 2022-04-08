@@ -262,10 +262,8 @@ decltype(auto) await(auto&& ...c)
   noexcept(noexcept((detail::retval(c), ...)))
   requires(sizeof...(c) >= 1)
 {
-  while ((c || ...)) // while any c are still alive
+  while (((((NEW == c.state()) || (SUSPENDED == c.state()) ? c() : void(0)), c) || ...))
   {
-    (((NEW == c.state()) || (SUSPENDED == c.state()) ? c() : void(0)), ...);
-
     event_base_loop(base, EVLOOP_NONBLOCK); // process events
   }
 
