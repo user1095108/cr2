@@ -57,6 +57,18 @@ private:
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
 
+  void __attribute__((noinline)) execute() noexcept
+  {
+    if constexpr(std::is_void_v<R>)
+    {
+      f_(*this);
+    }
+    else
+    {
+      r_ = f_(*this);
+    }
+  }
+
   template <enum state State>
   void set_state() noexcept
   {
@@ -72,18 +84,6 @@ private:
 
 public:
   explicit operator bool() const noexcept { return bool(state_); }
-
-  void __attribute__((noinline)) execute() noexcept
-  {
-    if constexpr(std::is_void_v<R>)
-    {
-      f_(*this);
-    }
-    else
-    {
-      r_ = f_(*this);
-    }
-  }
 
   void __attribute__((noinline)) operator()() noexcept
   {
@@ -152,8 +152,7 @@ public:
     }
     else if constexpr(std::is_void_v<R> && Tuple)
     {
-      struct empty_t{};
-      return empty_t{};
+      struct empty_t{}; return empty_t{};
     }
     else
     {
