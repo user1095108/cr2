@@ -6,7 +6,7 @@ int main()
 {
   std::cout <<
     std::get<2>(
-      cr2::await(
+      cr2::run(
         cr2::make_coroutine<128>(
           [](auto& c)
           {

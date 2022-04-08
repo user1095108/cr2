@@ -18,7 +18,7 @@ int main()
 
   std::cout <<
     std::get<0>(
-      cr2::await(
+      cr2::run(
         cr2::make_coroutine(
           [&](auto& c)
           {

@@ -27,7 +27,7 @@ namespace detail
 {
 
 extern "C"
-inline void do_cb(evutil_socket_t, short, void* const arg) noexcept
+inline void socket_cb(evutil_socket_t, short, void* const arg) noexcept
 {
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
@@ -53,7 +53,6 @@ private:
   F f_;
 
   alignas(std::max_align_t) void* stack_[N];
-  //std::unique_ptr<void*[]> stack_{::new void*[N]};
 
   explicit coroutine(F&& f):
     state_{NEW},
@@ -210,7 +209,8 @@ public:
     if (auto evp(&*ev); gnr::invoke_split_cond<2>(
         [&](auto&& flags, auto&& fd) noexcept
         {
-          event_assign(evp, base, fd, flags, detail::do_cb, &f);
+          event_assign(evp, base, fd, flags, detail::socket_cb, &f);
+
           return -1 == event_add(evp++, {});
         },
         std::forward<decltype(a)>(a)...
@@ -231,7 +231,7 @@ public:
     gnr::forwarder<void() noexcept> f([&]() noexcept { state_ = SUSPENDED; });
 
     struct event ev;
-    event_assign(&ev, base, -1, 0, detail::do_cb, &f);
+    event_assign(&ev, base, -1, 0, detail::socket_cb, &f);
 
     struct timeval tv;
     tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
@@ -253,13 +253,15 @@ template <std::size_t S>
 auto make_coroutine(auto&& f)
 {
   using F = std::remove_cvref_t<decltype(f)>;
-  using R = decltype(std::declval<decltype(f)>()(std::declval<coroutine<F, void, S>&>()));
+  using R = decltype(
+    std::declval<F>()(std::declval<coroutine<F, void, S>&>())
+  );
   using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
 
   return C(std::forward<decltype(f)>(f));
 }
 
-decltype(auto) await(auto&& ...c)
+decltype(auto) run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
@@ -271,7 +273,7 @@ decltype(auto) await(auto&& ...c)
       (
         c.state() >= NEW ?
           ++r, c() :
-          void(PAUSED == c.state() ? ++p : 0)
+          void(p += PAUSED == c.state())
       ),
       ...
     );

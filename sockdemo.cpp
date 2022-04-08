@@ -96,7 +96,7 @@ int main()
     )
   );
 
-  auto const t(cr2::await(c0, c1));
+  auto const t(cr2::run(c0, c1));
 
   std::cout << std::get<1>(t) << std::endl;
   std::cout << std::get<0>(t) << std::endl;
