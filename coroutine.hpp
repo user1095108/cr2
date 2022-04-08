@@ -44,8 +44,8 @@ private:
 
   std::function<R(coroutine&)> f_;
 
-  alignas(std::max_align_t) void* stack_[N];
-  //std::unique_ptr<void*[]> stack_{::new void*[N]};
+  //alignas(std::max_align_t) void* stack_[N];
+  std::unique_ptr<void*[]> stack_{::new void*[N]};
 
   explicit coroutine(F&& f):
     state_{NEW},
@@ -142,7 +142,7 @@ public:
     }
     else
     {
-      return r_;
+      return R(std::move(r_));
     }
   }
 
@@ -257,10 +257,9 @@ decltype(auto) await(auto&& ...c)
   noexcept(noexcept((detail::retval(c), ...)))
   requires(sizeof...(c) >= 1)
 {
-  while ((((
-    (NEW == c.state()) || (SUSPENDED == c.state()) ?
-    c() :
-    void(0)), c) || ...)
+  while ((
+    (((NEW == c.state()) || (SUSPENDED == c.state()) ?  c() : void(0)), c) ||
+    ...)
   )
   {
     event_base_loop(base, EVLOOP_NONBLOCK); // process events
