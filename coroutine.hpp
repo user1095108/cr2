@@ -1,5 +1,5 @@
-#ifndef COROUTINE_HPP
-# define COROUTINE_HPP
+#ifndef CR2_COROUTINE_HPP
+# define CR2_COROUTINE_HPP
 # pragma once
 
 #include <cstddef> // std::size_t
@@ -101,10 +101,6 @@ public:
     state_{NEW},
     f_(std::move(f))
   {
-    if (!cr2::base)
-    {
-      cr2::base = event_base_new();
-    }
   }
 
   coroutine(coroutine const&) = delete;
@@ -417,6 +413,11 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
+  if (!cr2::base)
+  {
+    cr2::base = event_base_new();
+  }
+
   for (;;)
   {
     std::size_t p{}, r{};
@@ -470,4 +471,4 @@ auto make_and_run(auto&& ...c)
 
 }
 
-#endif // COROUTINE_HPP
+#endif // CR2_COROUTINE_HPP
