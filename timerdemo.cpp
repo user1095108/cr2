@@ -48,16 +48,12 @@ int main()
   cr2::make_and_run<128>(
     [&](auto& c)
     {
-      for (evutil_make_socket_nonblocking(STDIN_FILENO);;)
+      do
       {
         std::cout << "waiting for keypress\n";
-
-        if (EV_READ & std::get<0>(
-          c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO)))
-        {
-          break;
-        }
       }
+      while (!(EV_READ & std::get<0>(
+        c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO))));
     }
   );
 
