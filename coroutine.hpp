@@ -208,16 +208,28 @@ public:
   auto suspend_on(auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
-    evutil_socket_t sck;
-    short fl;
+    auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
+      {
+        return std::tuple{(I % 2 ? a : 0)...};
+      }(std::make_index_sequence<sizeof...(a)>())
+    );
 
     gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
       [&](evutil_socket_t const s, short const f) noexcept
       {
-        sck = s;
-        fl = f;
         state_ = SUSPENDED;
-        event_base_loopbreak(base);
+
+        [&]<auto ...I>(std::index_sequence<I...>) noexcept
+        {
+          (
+            (
+              !(I % 2) && (std::get<I>(t) == s) ?
+                void(std::get<(I ? I - 1 : 0)>(t) = f) :
+                void(0)
+            ),
+            ...
+          );
+        }(std::make_index_sequence<sizeof...(a)>());
       }
     );
 
@@ -234,7 +246,12 @@ public:
       )
     )
     {
-      return std::pair{short{}, evutil_socket_t{-1}};
+      return [&]<auto ...I>(std::index_sequence<I...>) noexcept
+        {
+          return std::tuple{
+            (evutil_socket_t(-1) + evutil_socket_t(I - I))...
+          };
+        }(std::make_index_sequence<sizeof...(a)>());
     }
     else
     {
@@ -242,7 +259,7 @@ public:
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
-      return std::pair{fl, sck};
+      return t;
     }
   }
 
@@ -251,16 +268,28 @@ public:
     auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
-    evutil_socket_t sck;
-    short fl;
+    auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
+      {
+        return std::tuple{(I % 2 ? a : 0)...};
+      }(std::make_index_sequence<sizeof...(a)>())
+    );
 
     gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
       [&](evutil_socket_t const s, short const f) noexcept
       {
-        sck = s;
-        fl = f;
         state_ = SUSPENDED;
-        event_base_loopbreak(base);
+
+        [&]<auto ...I>(std::index_sequence<I...>) noexcept
+        {
+          (
+            (
+              !(I % 2) && (std::get<I>(t) == s) ?
+                void(std::get<(I ? I - 1 : 0)>(t) = f) :
+                void(0)
+            ),
+            ...
+          );
+        }(std::make_index_sequence<sizeof...(a)>());
       }
     );
 
@@ -282,7 +311,12 @@ public:
       )
     )
     {
-      return std::pair{short{}, evutil_socket_t{-1}};
+      return [&]<auto ...I>(std::index_sequence<I...>) noexcept
+        {
+          return std::tuple{
+            (evutil_socket_t(-1) + evutil_socket_t(I - I))...
+          };
+        }(std::make_index_sequence<sizeof...(a)>());
     }
     else
     {
@@ -290,7 +324,7 @@ public:
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
 
-      return std::pair{fl, sck};
+      return t;
     }
   }
 
