@@ -188,7 +188,7 @@ public:
     );
 
     struct event ev;
-    event_assign(&ev, base, -1, 0, detail::socket_cb, &f);
+    evtimer_assign(&ev, base, detail::socket_cb, &f);
 
     struct timeval tv;
     tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
