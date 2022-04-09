@@ -413,9 +413,9 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
-  if (!cr2::base)
+  if (!base)
   {
-    cr2::base = event_base_new();
+    base = event_base_new();
   }
 
   for (;;)
