@@ -1,6 +1,8 @@
 #include <cstring>
 #include <iostream>
 
+#include "generic/scopeexit.hpp"
+
 #include "coroutine.hpp"
 
 using namespace std::literals::string_literals;

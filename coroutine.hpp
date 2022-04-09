@@ -10,7 +10,6 @@
 #include "generic/forwarder.hpp"
 #include "generic/invoke.hpp"
 #include "generic/savestate.hpp"
-#include "generic/scopeexit.hpp"
 
 #include <event2/event.h>
 #include <event2/event_struct.h>
@@ -419,14 +418,7 @@ auto run(auto&& ...c)
     }
   }
 
-  auto const reset_all(
-    [&]() noexcept
-    {
-      (c.reset(), ...);
-    }
-  );
-
-  SCOPE_EXIT(&, reset_all());
+  (c.reset(), ...);
 
   if constexpr(sizeof...(c) > 1)
   {
