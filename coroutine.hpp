@@ -314,9 +314,13 @@ auto make_plain(auto&& f)
   noexcept(noexcept(
       coroutine<
         std::remove_cvref_t<decltype(f)>,
-        decltype(std::declval<std::remove_cvref_t<decltype(f)>>()(
-          std::declval<coroutine<std::remove_cvref_t<decltype(f)>, void, S>&>()
-        )),
+        decltype(
+          std::declval<std::remove_cvref_t<decltype(f)>>()(
+            std::declval<
+              coroutine<std::remove_cvref_t<decltype(f)>, void, S>&
+            >()
+          )
+        ),
         S
       >(std::forward<decltype(f)>(f))
     )

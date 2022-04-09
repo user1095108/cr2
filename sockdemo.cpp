@@ -1,8 +1,6 @@
 #include <cstring>
 #include <iostream>
 
-#include <arpa/inet.h> // inet_pton()
-
 #include "coroutine.hpp"
 
 using namespace std::literals::string_literals;
@@ -43,7 +41,7 @@ int main()
           sin.sin_family = AF_INET;
           sin.sin_port = htons(7777);
 
-          if (-1 == inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr))
+          if (-1 == evutil_inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr))
           {
             return "inet_pton()"s;
           }
@@ -75,7 +73,8 @@ int main()
             }
             else
             {
-              return "recv(): "s + std::strerror(errno);
+              return "recv(): "s +
+                evutil_socket_error_to_string(evutil_socket_geterror(sck));
             }
           }
           else if (sz)
