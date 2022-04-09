@@ -41,11 +41,21 @@ class coroutine
 private:
   enum : std::size_t { N = 1024 * S / sizeof(void*) };
 
+  struct empty_t{};
+
   gnr::statebuf in_, out_;
 
   enum state state_;
 
-  std::conditional_t<std::is_void_v<R>, void*, R> r_;
+  std::conditional_t<
+    std::is_void_v<R>,
+    empty_t,
+    std::conditional_t<
+      std::is_reference_v<R>,
+      R*,
+      R
+    >
+  > r_;
 
   F f_;
 
@@ -56,6 +66,10 @@ private:
     if constexpr(std::is_void_v<R>)
     {
       f_(*this);
+    }
+    else if constexpr(std::is_reference_v<R>)
+    {
+      r_ = &f_(*this);
     }
     else
     {
@@ -163,7 +177,15 @@ public:
     }
     else if constexpr(std::is_void_v<R> && Tuple)
     {
-      struct empty_t{}; return empty_t{};
+      return empty_t{};
+    }
+    else if constexpr(std::is_pointer_v<R>)
+    {
+      return r_;
+    }
+    else if constexpr(std::is_reference_v<R>)
+    {
+      return R(*r_);
     }
     else
     {
