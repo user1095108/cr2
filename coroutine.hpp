@@ -5,7 +5,7 @@
 #include <cstddef> // std::size_t
 #include <algorithm>
 #include <chrono>
-#include <memory> // std::unique_ptr
+#include <memory> // std::unique_ptr, std::shared_ptr
 
 #include "generic/forwarder.hpp"
 #include "generic/invoke.hpp"
@@ -372,7 +372,7 @@ auto make_shared(auto&& f)
   using R = decltype(
     std::declval<F>()(std::declval<coroutine<F, void, S>&>())
   );
-  using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
+  using C = coroutine<F, R, S>;
 
   return std::make_shared<C>(std::forward<decltype(f)>(f));
 }
@@ -384,7 +384,7 @@ auto make_unique(auto&& f)
   using R = decltype(
     std::declval<F>()(std::declval<coroutine<F, void, S>&>())
   );
-  using C = coroutine<std::remove_cvref_t<decltype(f)>, R, S>;
+  using C = coroutine<F, R, S>;
 
   return std::make_unique<C>(std::forward<decltype(f)>(f));
 }
