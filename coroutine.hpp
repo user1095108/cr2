@@ -248,7 +248,7 @@ public:
     {
       return [&]<auto ...I>(std::index_sequence<I...>) noexcept
         {
-          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short{})...};
+          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short(-1))...};
         }(std::make_index_sequence<sizeof...(a)>());
     }
     else
@@ -311,7 +311,7 @@ public:
     {
       return [&]<auto ...I>(std::index_sequence<I...>) noexcept
         {
-          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short{})...};
+          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short(-1))...};
         }(std::make_index_sequence<sizeof...(a)>());
     }
     else
