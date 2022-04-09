@@ -446,6 +446,7 @@ auto make_and_run(auto&& ...c)
 template <std::size_t ...S>
 auto make_and_run(auto&& ...c)
   noexcept(noexcept(run(make_plain(std::forward<decltype(c)>(c))...)))
+  requires(sizeof...(S) == sizeof...(c))
 {
   return run(make_plain<S>(std::forward<decltype(c)>(c))...);
 }
