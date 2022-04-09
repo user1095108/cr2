@@ -68,6 +68,9 @@ private:
 
   template <enum state State>
   void set_state() noexcept
+#ifdef __clang__
+    __attribute__((noinline))
+#endif
   {
     if (state_ = State; savestate(in_))
     {
