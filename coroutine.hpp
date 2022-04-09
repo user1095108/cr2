@@ -210,7 +210,7 @@ public:
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
       {
-        return std::tuple{(I % 2 ? a : 0)...};
+        return std::tuple{(I % 2 ? a : short{})...};
       }(std::make_index_sequence<sizeof...(a)>())
     );
 
@@ -223,13 +223,13 @@ public:
         {
           (
             (
-              !(I % 2) && (std::get<I>(t) == s) ?
-                void(std::get<(I ? I - 1 : 0)>(t) = f) :
+              std::get<2 * I + 1>(t) == s ?
+                void(std::get<2 * I>(t) = f) :
                 void(0)
             ),
             ...
           );
-        }(std::make_index_sequence<sizeof...(a)>());
+        }(std::make_index_sequence<sizeof...(a) / 2>());
       }
     );
 
@@ -248,9 +248,7 @@ public:
     {
       return [&]<auto ...I>(std::index_sequence<I...>) noexcept
         {
-          return std::tuple{
-            (evutil_socket_t(-1) + evutil_socket_t(I - I))...
-          };
+          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short{})...};
         }(std::make_index_sequence<sizeof...(a)>());
     }
     else
@@ -270,7 +268,7 @@ public:
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
       {
-        return std::tuple{(I % 2 ? a : 0)...};
+        return std::tuple{(I % 2 ? a : short{})...};
       }(std::make_index_sequence<sizeof...(a)>())
     );
 
@@ -283,13 +281,13 @@ public:
         {
           (
             (
-              !(I % 2) && (std::get<I>(t) == s) ?
-                void(std::get<(I ? I - 1 : 0)>(t) = f) :
+              std::get<2 * I + 1>(t) == s ?
+                void(std::get<2 * I>(t) = f) :
                 void(0)
             ),
             ...
           );
-        }(std::make_index_sequence<sizeof...(a)>());
+        }(std::make_index_sequence<sizeof...(a) / 2>());
       }
     );
 
@@ -313,9 +311,7 @@ public:
     {
       return [&]<auto ...I>(std::index_sequence<I...>) noexcept
         {
-          return std::tuple{
-            (evutil_socket_t(-1) + evutil_socket_t(I - I))...
-          };
+          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short{})...};
         }(std::make_index_sequence<sizeof...(a)>());
     }
     else
