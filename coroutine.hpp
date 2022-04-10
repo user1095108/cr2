@@ -243,7 +243,7 @@ public:
             (
               std::get<2 * I + 1>(t) == s ?
                 void(std::get<2 * I>(t) = f) :
-                void(0)
+                void()
             ),
             ...
           );
@@ -305,7 +305,7 @@ public:
             (
               std::get<2 * I + 1>(t) == s ?
                 void(std::get<2 * I>(t) = f) :
-                void(0)
+                void()
             ),
             ...
           );
