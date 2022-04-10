@@ -61,7 +61,7 @@ private:
 
   alignas(std::max_align_t) void* stack_[N];
 
-  void __attribute__((noinline)) execute() noexcept
+  __attribute__((noinline)) void execute() noexcept
   {
     if constexpr(std::is_void_v<R>)
     {
