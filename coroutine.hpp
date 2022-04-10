@@ -80,10 +80,10 @@ private:
   }
 
   template <enum state State>
-  void suspend() noexcept
 #ifdef __clang__
-    __attribute__((noinline))
+  __attribute__((noinline))
 #endif
+  void suspend() noexcept
   {
     if (state_ = State; savestate(in_))
     {
@@ -108,7 +108,7 @@ public:
 
   explicit operator bool() const noexcept { return bool(state_); }
 
-  void __attribute__((noinline)) operator()() noexcept
+  __attribute__((noinline)) void operator()() noexcept
   {
     if (savestate(out_))
     {
