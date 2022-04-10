@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 
 #include "generic/scopeexit.hpp"

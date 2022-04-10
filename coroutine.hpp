@@ -80,7 +80,7 @@ private:
   }
 
   template <enum state State>
-  void set_state() noexcept
+  void suspend() noexcept
 #ifdef __clang__
     __attribute__((noinline))
 #endif
@@ -194,8 +194,8 @@ public:
   //
   void reset() noexcept { state_ = NEW; }
 
-  void pause() noexcept { set_state<PAUSED>(); }
-  void suspend() noexcept { set_state<SUSPENDED>(); }
+  void pause() noexcept { suspend<PAUSED>(); }
+  void suspend() noexcept { suspend<SUSPENDED>(); }
 
   template <class Rep, class Period>
   auto sleep(std::chrono::duration<Rep, Period> const d) noexcept
@@ -346,15 +346,14 @@ public:
 
   template <typename A, typename B, std::size_t C>
   void suspend_to(coroutine<A, B, C>& c) noexcept
-  {
+  { // suspend means "out"
     if (state_ = SUSPENDED; savestate(in_))
     {
       clobber_all()
     }
     else
     {
-      c();
-      restorestate(out_);
+      c(); restorestate(out_);
     }
   }
 };
@@ -413,12 +412,7 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
-  if (!base)
-  {
-    base = event_base_new();
-  }
-
-  for (;;)
+  for (base ? void(0) : void(base = event_base_new());;)
   {
     std::size_t p{}, r{};
 
