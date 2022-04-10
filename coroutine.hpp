@@ -420,7 +420,7 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
-  for (auto const b(base ? base : base = event_base_new();;)
+  for (auto const b(base ? base : base = event_base_new());;)
   {
     std::size_t p{}, r{};
 
