@@ -2,6 +2,8 @@
 
 #include "coroutine.hpp"
 
+using namespace std::literals::chrono_literals;
+
 int main()
 {
   std::cout <<
@@ -14,7 +16,7 @@ int main()
           do
           {
             std::cout << "coro0 " << i++ << '\n';
-            c.sleep(std::chrono::seconds(1));
+            c.sleep(1s);
           }
           while (10 != i);
         },
@@ -25,7 +27,7 @@ int main()
           do
           {
             std::cout << "coro1 " << i-- << '\n';
-            c.sleep(std::chrono::seconds(1));
+            c.sleep(1s);
           }
           while (i);
         },
@@ -52,8 +54,7 @@ int main()
       {
         std::cout << "waiting for keypress\n";
       }
-      while (!(EV_READ & std::get<0>(
-        c.await(std::chrono::seconds(1), EV_READ, STDIN_FILENO))));
+      while (!(EV_READ & std::get<0>(c.await(1s, EV_READ, STDIN_FILENO))));
     }
   );
 
