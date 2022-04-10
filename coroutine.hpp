@@ -222,7 +222,7 @@ public:
     }
   }
 
-  auto suspend_on(auto&& ...a) noexcept
+  auto await(auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -284,7 +284,7 @@ public:
   }
 
   template <class Rep, class Period>
-  auto suspend_on(std::chrono::duration<Rep, Period> const d,
+  auto await(std::chrono::duration<Rep, Period> const d,
     auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {

@@ -53,7 +53,7 @@ int main()
         std::cout << "waiting for keypress\n";
       }
       while (!(EV_READ & std::get<0>(
-        c.suspend_on(std::chrono::seconds(1), EV_READ, STDIN_FILENO))));
+        c.await(std::chrono::seconds(1), EV_READ, STDIN_FILENO))));
     }
   );
 

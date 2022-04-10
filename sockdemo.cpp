@@ -69,7 +69,7 @@ int main()
             if ((EAGAIN == errno) || (EWOULDBLOCK == errno))
             {
               std::cout << "pausing\n";
-              c.suspend_on(EV_CLOSED|EV_READ, sck);
+              c.await(EV_CLOSED|EV_READ, sck);
 
               continue;
             }

@@ -38,7 +38,7 @@ int main()
     },
     [](auto& c)
     {
-      c.suspend_on(EV_READ, STDIN_FILENO);
+      c.await(EV_READ, STDIN_FILENO);
       std::cout << "coro2\n";
     }
   );
