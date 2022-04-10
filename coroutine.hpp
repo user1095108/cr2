@@ -47,7 +47,9 @@ private:
 
   enum state state_;
 
-  std::conditional_t<
+  F f_;
+
+  [[no_unique_address]]	std::conditional_t<
     std::is_void_v<R>,
     empty_t,
     std::conditional_t<
@@ -56,8 +58,6 @@ private:
       R
     >
   > r_;
-
-  F f_;
 
   alignas(std::max_align_t) void* stack_[N];
 
