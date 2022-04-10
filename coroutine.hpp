@@ -420,7 +420,7 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
-  for (base ? void(0) : void(base = event_base_new());;)
+  for (auto const b(base ? base : base = event_base_new();;)
   {
     std::size_t p{}, r{};
 
@@ -435,7 +435,7 @@ auto run(auto&& ...c)
 
     if (r || p)
     {
-      event_base_loop(base, r ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
+      event_base_loop(b, r ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
     }
     else
     {
