@@ -26,6 +26,8 @@ static inline struct event_base* base;
 namespace detail
 {
 
+struct empty_t{};
+
 extern "C"
 inline void socket_cb(evutil_socket_t const s, short const f,
   void* const arg) noexcept
@@ -41,8 +43,6 @@ class coroutine
 private:
   enum : std::size_t { N = 1024 * S / sizeof(void*) };
 
-  struct empty_t{};
-
   gnr::statebuf in_, out_;
 
   enum state state_;
@@ -51,7 +51,7 @@ private:
 
   [[no_unique_address]]	std::conditional_t<
     std::is_void_v<R>,
-    empty_t,
+    detail::empty_t,
     std::conditional_t<
       std::is_reference_v<R>,
       R*,
@@ -173,7 +173,7 @@ public:
     }
     else if constexpr(std::is_void_v<R> && Tuple)
     {
-      return empty_t{};
+      return detail::empty_t{};
     }
     else if constexpr(std::is_pointer_v<R>)
     {
