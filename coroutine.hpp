@@ -207,10 +207,11 @@ public:
     struct event ev;
     evtimer_assign(&ev, base, detail::socket_cb, &f);
 
-    struct timeval tv;
-    tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
-    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
-      d - std::chrono::floor<std::chrono::seconds>(d)).count();
+    struct timeval tv{
+      .tv_sec = std::chrono::floor<std::chrono::seconds>(d).count(),
+      .tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+        d - std::chrono::floor<std::chrono::seconds>(d)).count()
+    };
 
     if (-1 == event_add(&ev, &tv))
     {
@@ -284,8 +285,7 @@ public:
   }
 
   template <class Rep, class Period>
-  auto await(std::chrono::duration<Rep, Period> const d,
-    auto&& ...a) noexcept
+  auto await(std::chrono::duration<Rep, Period> const d, auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -313,10 +313,11 @@ public:
       }
     );
 
-    struct timeval tv;
-    tv.tv_sec = std::chrono::floor<std::chrono::seconds>(d).count();
-    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
-      d - std::chrono::floor<std::chrono::seconds>(d)).count();
+    struct timeval tv{
+      .tv_sec = std::chrono::floor<std::chrono::seconds>(d).count(),
+      .tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+        d - std::chrono::floor<std::chrono::seconds>(d)).count()
+    };
 
     struct event ev[sizeof...(a) / 2];
 
