@@ -263,19 +263,24 @@ public:
       )
     )
     {
-      return [&]<auto ...I>(std::index_sequence<I...>) noexcept
-        {
-          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short{})...};
-        }(std::make_index_sequence<sizeof...(a)>());
+      [&]<auto ...I>(std::index_sequence<I...>) noexcept
+      { // set sockets to -1
+        (
+          (
+            std::get<2 * I + 1>(t) = -1
+          ),
+          ...
+        );
+      }(std::make_index_sequence<sizeof...(a) / 2>());
     }
     else
     {
       pause();
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
-
-      return t;
     }
+
+    return t;
   }
 
   template <class Rep, class Period>
@@ -326,19 +331,24 @@ public:
       )
     )
     {
-      return [&]<auto ...I>(std::index_sequence<I...>) noexcept
-        {
-          return std::tuple{(I % 2 ? evutil_socket_t(-1) : short{})...};
-        }(std::make_index_sequence<sizeof...(a)>());
+      [&]<auto ...I>(std::index_sequence<I...>) noexcept
+      { // set sockets to -1
+        (
+          (
+            std::get<2 * I + 1>(t) = -1
+          ),
+          ...
+        );
+      }(std::make_index_sequence<sizeof...(a) / 2>());
     }
     else
     {
       pause();
 
       std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
-
-      return t;
     }
+
+    return t;
   }
 
   template <typename A, typename B, std::size_t C>
