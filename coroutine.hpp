@@ -171,11 +171,8 @@ public:
     {
       return;
     }
-    else if constexpr(std::is_void_v<R> && Tuple)
-    {
-      return detail::empty_t{};
-    }
-    else if constexpr(std::is_pointer_v<R>)
+    else if constexpr((std::is_void_v<R> && Tuple) ||
+      std::is_pointer_v<R>)
     {
       return r_;
     }
