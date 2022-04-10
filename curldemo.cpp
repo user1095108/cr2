@@ -7,7 +7,7 @@
 namespace curl
 {
 
-extern "C" std::size_t c_get_write(char const* const buffer, std::size_t,
+extern "C" std::size_t c_get(char const* const buffer, std::size_t,
   std::size_t const nmemb, void* const ptr)
 {
   return static_cast<gnr::forwarder<std::size_t(char const*, std::size_t)>*>(
@@ -35,7 +35,7 @@ auto get(auto& c, std::string_view const& url)
   );
 
   curl_easy_setopt(h, CURLOPT_WRITEDATA, &f);
-  curl_easy_setopt(h, CURLOPT_WRITEFUNCTION, c_get_write);
+  curl_easy_setopt(h, CURLOPT_WRITEFUNCTION, c_get);
 
   c.suspend();
   curl_easy_perform(h);
