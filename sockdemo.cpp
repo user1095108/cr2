@@ -25,7 +25,7 @@ int main()
 
         return j;
       },
-      [&](auto& c)
+      [](auto& c)
       {
         evutil_socket_t sck;
 
