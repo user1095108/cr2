@@ -42,5 +42,8 @@ int main()
     ) <<
     std::endl;
 
+  event_base_free(cr2::base);
+  libevent_global_shutdown();
+
   return 0;
 }

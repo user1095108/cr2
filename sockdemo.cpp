@@ -97,5 +97,8 @@ int main()
   std::cout << std::get<1>(t) << std::endl;
   std::cout << std::get<0>(t) << std::endl;
 
+  event_base_free(cr2::base);
+  libevent_global_shutdown();
+
   return 0;
 }

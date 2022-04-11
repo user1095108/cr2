@@ -84,5 +84,8 @@ int main()
 
   curl_global_cleanup();
 
+  event_base_free(cr2::base);
+  libevent_global_shutdown();
+
   return 0;
 }
