@@ -418,9 +418,7 @@ auto run(auto&& ...c)
 
     (
       (
-        c.state() >= NEW ?
-          ++r, c() :
-          void(p += PAUSED == c.state())
+        c.state() >= NEW ? ++r, c() : void(p += PAUSED == c.state())
       ),
       ...
     );
