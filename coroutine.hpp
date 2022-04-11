@@ -75,8 +75,6 @@ private:
     {
       r_ = f_(*this);
     }
-
-    state_ = DEAD;
   }
 
   template <enum state State>
@@ -153,6 +151,7 @@ public:
 
       execute();
 
+      state_ = DEAD;
       restorestate(out_); // return outside
     }
   }
