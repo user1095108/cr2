@@ -213,14 +213,7 @@ public:
         d - std::chrono::floor<std::chrono::seconds>(d)).count()
     };
 
-    if (-1 == event_add(&ev, &tv))
-    {
-      return true;
-    }
-    else
-    {
-      return pause(), false;
-    }
+    return -1 == event_add(&ev, &tv) ? true : (pause(), false);
   }
 
   auto await(auto&& ...a) noexcept
