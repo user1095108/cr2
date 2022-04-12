@@ -1,11 +1,16 @@
 #include <iostream>
 
+#include <future>
+#include <thread>
+
 #include "coroutine.hpp"
 
 using namespace std::literals::chrono_literals;
 
 int main()
 {
+  event_enable_debug_mode();
+
   std::cout <<
     std::get<2>(
       cr2::make_and_run<128, 128, 128>(
@@ -50,6 +55,13 @@ int main()
   cr2::make_and_run<128>(
     [&](auto& c)
     {
+      struct event e;
+
+      c.await(
+        [&]{std::thread([&]{evuser_trigger(&e);}).detach();},
+        e
+      );
+
       do
       {
         std::cout << "waiting for keypress\n";

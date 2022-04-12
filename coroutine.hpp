@@ -384,27 +384,37 @@ public:
     return t;
   }
 
-  void await(std::same_as<struct event&> auto& ...ev) noexcept
+  auto await(auto&& f, std::same_as<struct event> auto& ...ev) noexcept
     requires(bool(sizeof...(ev)))
   {
-    gnr::forwarder<void() noexcept> f(
-      [&]() noexcept
+    std::array<bool, sizeof...(ev)> r{};
+
+    gnr::forwarder<void(evutil_socket_t, short) noexcept> g(
+      [&](evutil_socket_t, short const f) noexcept
       {
+        r[f] = true;
         state_ = SUSPENDED;
       }
     );
 
-    (event_assign(&ev, base, detail::timer_cb, &f), ...);
+    [&]<auto ...I>(std::index_sequence<I...>) noexcept
+    {
+      (event_assign(&ev, base, -1, I, detail::socket_cb, &g), ...);
+    }(std::make_index_sequence<sizeof...(ev)>());
+
+    f();
 
     pause();
+
+    return r;
   }
 
-  void await_all(std::same_as<struct event&> auto& ...ev) noexcept
+  void await_all(auto&& f, std::same_as<struct event> auto& ...ev) noexcept
     requires(bool(sizeof...(ev)))
   {
     std::size_t c{};
 
-    gnr::forwarder<void() noexcept> f(
+    gnr::forwarder<void() noexcept> g(
       [&]() noexcept
       {
         ++c;
@@ -412,7 +422,9 @@ public:
       }
     );
 
-    (event_assign(&ev, base, detail::timer_cb, &f), ...);
+    (event_assign(&ev, base, -1, 0, detail::timer_cb, &g), ...);
+
+    f();
 
     do
     {
