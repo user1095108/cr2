@@ -16,7 +16,7 @@ int main()
           do
           {
             std::cout << "coro0 " << i++ << '\n';
-            c.sleep(1s);
+            c.await(1s);
           }
           while (10 != i);
         },
@@ -27,7 +27,7 @@ int main()
           do
           {
             std::cout << "coro1 " << i-- << '\n';
-            c.sleep(1s);
+            c.await(1s);
           }
           while (i);
         },
