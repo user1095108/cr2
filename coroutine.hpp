@@ -120,7 +120,12 @@ public:
   }
 
   ~coroutine()
-    noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
+    noexcept(
+      std::is_pointer_v<R> ||
+      std::is_reference_v<R> ||
+      std::is_same_v<detail::empty_t, R> ||
+      noexcept(reinterpret_cast<R*>(&r_)->~R())
+    )
   {
     if constexpr(
       !std::is_pointer_v<R> &&
