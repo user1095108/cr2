@@ -192,7 +192,6 @@ public:
     else
     {
       R r(std::move(*reinterpret_cast<R*>(&r_)));
-
       reinterpret_cast<R*>(&r_)->~R();
 
       return r;
