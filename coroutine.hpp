@@ -384,7 +384,8 @@ public:
     return t;
   }
 
-  auto await(auto&& f, std::same_as<struct event> auto& ...ev) noexcept
+  auto await(auto&& f, std::same_as<struct event> auto& ...ev)
+    noexcept(noexcept(f))
     requires(bool(sizeof...(ev)))
   {
     std::array<bool, sizeof...(ev)> r{};
@@ -409,7 +410,8 @@ public:
     return r;
   }
 
-  void await_all(auto&& f, std::same_as<struct event> auto& ...ev) noexcept
+  void await_all(auto&& f, std::same_as<struct event> auto& ...ev)
+    noexcept(noexcept(f))
     requires(bool(sizeof...(ev)))
   {
     std::size_t c{};
