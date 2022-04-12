@@ -5,6 +5,7 @@
 #include <cstddef> // std::size_t
 #include <algorithm>
 #include <chrono>
+#include <concepts>
 #include <memory> // std::unique_ptr, std::shared_ptr
 
 #include "generic/forwarder.hpp"
@@ -36,6 +37,12 @@ inline void socket_cb(evutil_socket_t const s, short const f,
   void* const arg) noexcept
 {
   (*static_cast<gnr::forwarder<void(evutil_socket_t, short)>*>(arg))(s, f);
+}
+
+extern "C"
+inline void timer_cb(evutil_socket_t, short, void* const arg) noexcept
+{
+  (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
 
 }
@@ -354,18 +361,38 @@ public:
     return t;
   }
 
+  void await(std::same_as<struct event&> auto& ...ev) noexcept
+  {
+    std::size_t c{};
+
+    gnr::forwarder<void() noexcept> f(
+      [&]() noexcept
+      {
+        ++c;
+        state_ = SUSPENDED;
+      }
+    );
+
+    (event_assign(&ev, base, detail::timer_cb, &f), ...);
+
+    do
+    {
+      pause();
+    } while (c != sizeof...(ev));
+  }
+
   template <class Rep, class Period>
   auto sleep(std::chrono::duration<Rep, Period> const d) noexcept
   {
-    gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
-      [&](evutil_socket_t, short) noexcept
+    gnr::forwarder<void() noexcept> f(
+      [&]() noexcept
       {
         state_ = SUSPENDED;
       }
     );
 
     struct event ev;
-    evtimer_assign(&ev, base, detail::socket_cb, &f);
+    evtimer_assign(&ev, base, detail::timer_cb, &f);
 
     struct timeval tv{
       .tv_sec = std::chrono::floor<std::chrono::seconds>(d).count(),
