@@ -52,7 +52,7 @@ private:
 
   F f_;
 
-  std::conditional_t<
+  [[no_unique_address]]	std::conditional_t<
     std::is_pointer_v<R>,
     R,
     std::conditional_t<
