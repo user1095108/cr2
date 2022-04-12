@@ -58,7 +58,10 @@ int main()
       struct event e;
 
       c.await(
-        [&](){std::thread([&]{evuser_trigger(&e);}).detach();},
+        [&]()
+        {
+          std::thread([&]{evuser_trigger(&e);}).detach();
+        },
         e
       );
 
