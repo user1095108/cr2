@@ -116,6 +116,7 @@ public:
     ) = default;
 
   ~coroutine()
+    noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
     requires(
       !std::is_pointer_v<R> &&
       !std::is_reference_v<R> &&
