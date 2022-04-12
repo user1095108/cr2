@@ -9,8 +9,6 @@ using namespace std::literals::chrono_literals;
 
 int main()
 {
-  event_enable_debug_mode();
-
   std::cout <<
     std::get<2>(
       cr2::make_and_run<128, 128, 128>(

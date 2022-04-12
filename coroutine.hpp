@@ -255,7 +255,7 @@ public:
     return -1 == event_add(&ev, &tv) ? true : (pause(), false);
   }
 
-  auto await(auto&& ...a) noexcept
+  auto await(std::integral auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -385,7 +385,7 @@ public:
   }
 
   auto await(auto&& f, std::same_as<struct event> auto& ...ev)
-    noexcept(noexcept(f))
+    noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
     std::array<bool, sizeof...(ev)> r{};
@@ -393,8 +393,8 @@ public:
     gnr::forwarder<void(evutil_socket_t, short) noexcept> g(
       [&](evutil_socket_t, short const f) noexcept
       {
-        r[f] = true;
         state_ = SUSPENDED;
+        r[f] = true;
       }
     );
 
@@ -411,7 +411,7 @@ public:
   }
 
   void await_all(auto&& f, std::same_as<struct event> auto& ...ev)
-    noexcept(noexcept(f))
+    noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
     std::size_t c{};
@@ -419,8 +419,8 @@ public:
     gnr::forwarder<void() noexcept> g(
       [&]() noexcept
       {
-        ++c;
         state_ = SUSPENDED;
+        ++c;
       }
     );
 
