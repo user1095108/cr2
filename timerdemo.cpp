@@ -9,6 +9,8 @@ using namespace std::literals::chrono_literals;
 
 int main()
 {
+  evthread_use_pthreads();
+
   std::cout <<
     std::get<2>(
       cr2::make_and_run<128, 128, 128>(
@@ -56,7 +58,7 @@ int main()
       struct event e;
 
       c.await(
-        [&]{std::thread([&]{evuser_trigger(&e);}).detach();},
+        [&](){std::thread([&]{evuser_trigger(&e);}).detach();},
         e
       );
 

@@ -14,6 +14,7 @@
 
 #include <event2/event.h>
 #include <event2/event_struct.h>
+#include <event2/thread.h>
 
 namespace cr2
 {
@@ -388,7 +389,7 @@ public:
     noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
-    std::array<bool, sizeof...(ev)> r{};
+    std::array<int, sizeof...(ev)> r{};
 
     gnr::forwarder<void(evutil_socket_t, short) noexcept> g(
       [&](evutil_socket_t, short const f) noexcept
@@ -403,10 +404,14 @@ public:
       (event_assign(&ev, base, -1, I, detail::socket_cb, &g), ...);
     }(std::make_index_sequence<sizeof...(ev)>());
 
-    return f(), pause(), r;
+    (((-1 == event_add(&ev, {})) || ...)) ?
+      void(std::ranges::fill(r, -1)) :
+      (f(), pause());
+
+    return r;
   }
 
-  void await_all(auto&& f, std::same_as<struct event> auto& ...ev)
+  bool await_all(auto&& f, std::same_as<struct event> auto& ...ev)
     noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
@@ -422,12 +427,21 @@ public:
 
     (event_assign(&ev, base, -1, 0, detail::timer_cb, &g), ...);
 
-    f();
-
-    do
+    if (((-1 == event_add(&ev, {})) || ...))
     {
-      pause();
-    } while (c != sizeof...(ev));
+      return true;
+    }
+    else
+    {
+      f();
+
+      do
+      {
+        pause();
+      } while (c != sizeof...(ev));
+
+      return false;
+    }
   }
 
   template <typename A, typename B, std::size_t C>
