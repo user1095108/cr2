@@ -362,6 +362,22 @@ public:
   }
 
   void await(std::same_as<struct event&> auto& ...ev) noexcept
+    requires(bool(sizeof...(ev)))
+  {
+    gnr::forwarder<void() noexcept> f(
+      [&]() noexcept
+      {
+        state_ = SUSPENDED;
+      }
+    );
+
+    (event_assign(&ev, base, detail::timer_cb, &f), ...);
+
+    pause();
+  }
+
+  void await_all(std::same_as<struct event&> auto& ...ev) noexcept
+    requires(bool(sizeof...(ev)))
   {
     std::size_t c{};
 
