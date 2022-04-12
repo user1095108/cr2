@@ -28,6 +28,9 @@ namespace detail
 
 struct empty_t{};
 
+template <typename T>
+using transform_void_t = std::conditional_t<std::is_void_v<T>, empty_t, T>;
+
 extern "C"
 inline void socket_cb(evutil_socket_t const s, short const f,
   void* const arg) noexcept
@@ -49,13 +52,13 @@ private:
 
   F f_;
 
-  [[no_unique_address]]	std::conditional_t<
-    std::is_void_v<R>,
-    detail::empty_t,
+  std::conditional_t<
+    std::is_pointer_v<R>,
+    R,
     std::conditional_t<
       std::is_reference_v<R>,
       R*,
-      R
+      std::aligned_storage_t<sizeof(R)>
     >
   > r_;
 
@@ -63,9 +66,13 @@ private:
 
   __attribute__((noinline)) void execute() noexcept
   {
-    if constexpr(std::is_void_v<R>)
+    if constexpr(std::is_same_v<detail::empty_t, R>)
     {
       f_(*this);
+    }
+    else if constexpr(std::is_pointer_v<R>)
+    {
+      r_ = f_(*this);
     }
     else if constexpr(std::is_reference_v<R>)
     {
@@ -73,7 +80,7 @@ private:
     }
     else
     {
-      r_ = f_(*this);
+      ::new (std::addressof(r_)) R(f_(*this));
     }
   }
 
@@ -158,7 +165,7 @@ public:
 
   //
   template <bool Tuple = false>
-  decltype(auto) retval() const
+  decltype(auto) retval()
     noexcept(
       std::is_void_v<R> ||
       std::is_pointer_v<R> ||
@@ -166,12 +173,15 @@ public:
       std::is_nothrow_move_constructible_v<R>
     )
   {
-    if constexpr(std::is_void_v<R> && !Tuple)
+    if constexpr(std::is_same_v<detail::empty_t, R> && !Tuple)
     {
       return;
     }
-    else if constexpr((std::is_void_v<R> && Tuple) ||
-      std::is_pointer_v<R>)
+    else if constexpr(std::is_same_v<detail::empty_t, R>)
+    {
+      return detail::empty_t{};
+    }
+    else if constexpr(std::is_pointer_v<R>)
     {
       return r_;
     }
@@ -181,7 +191,11 @@ public:
     }
     else
     {
-      return R(std::move(r_));
+      R r(std::move(*reinterpret_cast<R*>(&r_)));
+
+      reinterpret_cast<R*>(&r_)->~R();
+
+      return r;
     }
   }
 
@@ -246,11 +260,11 @@ public:
     struct event ev[sizeof...(a) / 2];
 
     if (gnr::invoke_split_cond<2>(
-        [this, evp(&*ev), &f](auto&& flags, auto&& fd) mutable noexcept
+        [this, ep(&*ev), &f](auto&& flags, auto&& fd) mutable noexcept
         {
-          event_assign(evp, base, fd, flags, detail::socket_cb, &f);
+          event_assign(ep, base, fd, EV_PERSIST|flags, detail::socket_cb, &f);
 
-          return -1 == event_add(evp++, {});
+          return -1 == event_add(ep++, {});
         },
         std::forward<decltype(a)>(a)...
       )
@@ -314,11 +328,11 @@ public:
     struct event ev[sizeof...(a) / 2];
 
     if (gnr::invoke_split_cond<2>(
-        [this, evp(&*ev), &f, &tv](auto&& flags, auto&& fd) mutable noexcept
+        [this, ep(&*ev), &f, &tv](auto&& flags, auto&& fd) mutable noexcept
         {
-          event_assign(evp, base, fd, flags, detail::socket_cb, &f);
+          event_assign(ep, base, fd, EV_PERSIST|flags, detail::socket_cb, &f);
 
-          return -1 == event_add(evp++, &tv);
+          return -1 == event_add(ep++, &tv);
         },
         std::forward<decltype(a)>(a)...
       )
@@ -363,22 +377,27 @@ auto make_plain(auto&& f)
   noexcept(noexcept(
       coroutine<
         std::remove_cvref_t<decltype(f)>,
-        decltype(
-          std::declval<std::remove_cvref_t<decltype(f)>>()(
-            std::declval<
-              coroutine<std::remove_cvref_t<decltype(f)>, void, S>&
-            >()
+        detail::transform_void_t<
+          decltype(
+            std::declval<std::remove_cvref_t<decltype(f)>>()(
+              std::declval<
+                coroutine<std::remove_cvref_t<decltype(f)>, detail::empty_t, S>&
+              >()
+            )
           )
-        ),
+        >,
         S
       >(std::forward<decltype(f)>(f))
     )
   )
 {
   using F = std::remove_cvref_t<decltype(f)>;
-  using R = decltype(
-    std::declval<F>()(std::declval<coroutine<F, void, S>&>())
-  );
+  using R = detail::transform_void_t<
+    decltype(std::declval<F>()(
+        std::declval<coroutine<F, detail::empty_t, S>&>()
+      )
+    )
+  >;
   using C = coroutine<F, R, S>;
 
   return C(std::forward<decltype(f)>(f));
@@ -388,9 +407,12 @@ template <std::size_t S = default_stack_size>
 auto make_shared(auto&& f)
 {
   using F = std::remove_cvref_t<decltype(f)>;
-  using R = decltype(
-    std::declval<F>()(std::declval<coroutine<F, void, S>&>())
-  );
+  using R = detail::transform_void_t<
+    decltype(std::declval<F>()(
+        std::declval<coroutine<F, detail::empty_t, S>&>()
+      )
+    )
+  >;
   using C = coroutine<F, R, S>;
 
   return std::make_shared<C>(std::forward<decltype(f)>(f));
@@ -400,9 +422,12 @@ template <std::size_t S = default_stack_size>
 auto make_unique(auto&& f)
 {
   using F = std::remove_cvref_t<decltype(f)>;
-  using R = decltype(
-    std::declval<F>()(std::declval<coroutine<F, void, S>&>())
-  );
+  using R = detail::transform_void_t<
+    decltype(std::declval<F>()(
+        std::declval<coroutine<F, detail::empty_t, S>&>()
+      )
+    )
+  >;
   using C = coroutine<F, R, S>;
 
   return std::make_unique<C>(std::forward<decltype(f)>(f));
