@@ -119,22 +119,17 @@ public:
   {
   }
 
-  ~coroutine() noexcept
-    requires(
-      std::is_pointer_v<R> ||
-      std::is_reference_v<R> ||
-      std::is_same_v<detail::empty_t, R>
-    ) = default;
-
   ~coroutine()
     noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
-    requires(
+  {
+    if constexpr(
       !std::is_pointer_v<R> &&
       !std::is_reference_v<R> &&
       !std::is_same_v<detail::empty_t, R>
     )
-  {
-    reinterpret_cast<R*>(&r_)->~R();
+    {
+      reinterpret_cast<R*>(&r_)->~R();
+    }
   }
 
   coroutine(coroutine const&) = delete;
