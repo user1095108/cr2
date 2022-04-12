@@ -58,7 +58,11 @@ private:
     std::conditional_t<
       std::is_reference_v<R>,
       R*,
-      std::aligned_storage_t<sizeof(R)>
+      std::conditional_t<
+        std::is_same_v<detail::empty_t, R>,
+        detail::empty_t,
+        std::aligned_storage_t<sizeof(R)>
+      >
     >
   > r_;
 
