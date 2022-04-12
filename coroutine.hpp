@@ -403,11 +403,7 @@ public:
       (event_assign(&ev, base, -1, I, detail::socket_cb, &g), ...);
     }(std::make_index_sequence<sizeof...(ev)>());
 
-    f();
-
-    pause();
-
-    return r;
+    return f(), pause(), r;
   }
 
   void await_all(auto&& f, std::same_as<struct event> auto& ...ev)
