@@ -108,6 +108,18 @@ public:
   {
   }
 
+  ~coroutine()
+  {
+    if constexpr(
+      !std::is_pointer_v<R> &&
+      !std::is_reference_v<R> &&
+      !std::is_same_v<detail::empty_t, R>
+    )
+    {
+      reinterpret_cast<R*>(&r_)->~R();
+    }
+  }
+
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
 
@@ -191,10 +203,7 @@ public:
     }
     else
     {
-      R r(std::move(*reinterpret_cast<R*>(&r_)));
-      reinterpret_cast<R*>(&r_)->~R();
-
-      return r;
+      return R(std::move(*reinterpret_cast<R*>(&r_)));
     }
   }
 
