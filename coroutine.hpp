@@ -225,28 +225,6 @@ public:
   void pause() noexcept { suspend<PAUSED>(); }
   void suspend() noexcept { suspend<SUSPENDED>(); }
 
-  template <class Rep, class Period>
-  auto sleep(std::chrono::duration<Rep, Period> const d) noexcept
-  {
-    gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
-      [&](evutil_socket_t, short) noexcept
-      {
-        state_ = SUSPENDED;
-      }
-    );
-
-    struct event ev;
-    evtimer_assign(&ev, base, detail::socket_cb, &f);
-
-    struct timeval tv{
-      .tv_sec = std::chrono::floor<std::chrono::seconds>(d).count(),
-      .tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
-        d - std::chrono::floor<std::chrono::seconds>(d)).count()
-    };
-
-    return -1 == event_add(&ev, &tv) ? true : (pause(), false);
-  }
-
   auto await(auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
@@ -374,6 +352,28 @@ public:
     }
 
     return t;
+  }
+
+  template <class Rep, class Period>
+  auto sleep(std::chrono::duration<Rep, Period> const d) noexcept
+  {
+    gnr::forwarder<void(evutil_socket_t, short) noexcept> f(
+      [&](evutil_socket_t, short) noexcept
+      {
+        state_ = SUSPENDED;
+      }
+    );
+
+    struct event ev;
+    evtimer_assign(&ev, base, detail::socket_cb, &f);
+
+    struct timeval tv{
+      .tv_sec = std::chrono::floor<std::chrono::seconds>(d).count(),
+      .tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+        d - std::chrono::floor<std::chrono::seconds>(d)).count()
+    };
+
+    return -1 == event_add(&ev, &tv) ? true : (pause(), false);
   }
 
   template <typename A, typename B, std::size_t C>
