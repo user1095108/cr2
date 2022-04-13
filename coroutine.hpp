@@ -404,13 +404,7 @@ public:
     }
     else
     {
-      f();
-
-      pause();
-
-      (event_del(&ev), ...);
-
-      return false;
+      return f(), pause(), (event_del(&ev), ...), false;
     }
   }
 
@@ -443,9 +437,7 @@ public:
         pause();
       } while (c != sizeof...(ev));
 
-      (event_del(&ev), ...);
-
-      return false;
+      return (event_del(&ev), ...), false;
     }
   }
 

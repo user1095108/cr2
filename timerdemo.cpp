@@ -1,6 +1,4 @@
 #include <iostream>
-
-#include <future>
 #include <thread>
 
 #include "coroutine.hpp"
