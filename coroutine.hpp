@@ -256,7 +256,7 @@ public:
     return -1 == event_add(&ev, &tv) ? true : (pause(), false);
   }
 
-  auto await(std::integral auto&& ...a) noexcept
+  auto await(auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
