@@ -389,7 +389,7 @@ public:
     noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
-    std::array<short, sizeof...(ev)> r{};
+    std::array<signed char, sizeof...(ev)> r{};
 
     gnr::forwarder<void(evutil_socket_t, short) noexcept> g(
       [&](evutil_socket_t, short const f) noexcept
