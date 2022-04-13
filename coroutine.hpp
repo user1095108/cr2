@@ -398,14 +398,9 @@ public:
 
     (event_assign(&ev, base, -1, 0, detail::timer_cb, &g), ...);
 
-    if (((-1 == event_add(&ev, {})) || ...))
-    {
-      return true;
-    }
-    else
-    {
-      return f(), pause(), (event_del(&ev), ...), false;
-    }
+    return (((-1 == event_add(&ev, {})) || ...)) ?
+      true :
+      (f(), pause(), (event_del(&ev), ...), false);
   }
 
   bool await_all(auto&& f, std::same_as<struct event> auto& ...ev)
