@@ -385,30 +385,33 @@ public:
     return t;
   }
 
-  auto await(auto&& f, std::same_as<struct event> auto& ...ev)
+  bool await(auto&& f, std::same_as<struct event> auto& ...ev)
     noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
-    std::array<signed char, sizeof...(ev)> r{};
-
-    gnr::forwarder<void(evutil_socket_t, short) noexcept> g(
-      [&](evutil_socket_t, short const f) noexcept
+    gnr::forwarder<void() noexcept> g(
+      [&]() noexcept
       {
         state_ = SUSPENDED;
-        r[f] = true;
       }
     );
 
-    [&]<auto ...I>(std::index_sequence<I...>) noexcept
+    (event_assign(&ev, base, -1, 0, detail::timer_cb, &g), ...);
+
+    if (((-1 == event_add(&ev, {})) || ...))
     {
-      (event_assign(&ev, base, -1, I, detail::socket_cb, &g), ...);
-    }(std::make_index_sequence<sizeof...(ev)>());
+      return true;
+    }
+    else
+    {
+      f();
 
-    (((-1 == event_add(&ev, {})) || ...)) ?
-      void(std::ranges::fill(r, -1)) :
-      (f(), pause());
+      pause();
 
-    return r;
+      (event_del(&ev), ...);
+
+      return false;
+    }
   }
 
   bool await_all(auto&& f, std::same_as<struct event> auto& ...ev)
@@ -439,6 +442,8 @@ public:
       {
         pause();
       } while (c != sizeof...(ev));
+
+      (event_del(&ev), ...);
 
       return false;
     }
@@ -525,18 +530,19 @@ auto run(auto&& ...c)
 {
   for (auto const b(base ? base : base = event_base_new());;)
   {
-    std::size_t p{}, r{};
+    std::size_t p{}, s{};
 
     (
       (
-        c.state() >= NEW ? ++r, c() : void(p += PAUSED == c.state())
+        (c.state() >= NEW ? c() : void()),
+        (SUSPENDED == c.state() ? ++s : p += PAUSED == c.state())
       ),
       ...
     );
 
-    if (r || p)
+    if (s || p)
     {
-      event_base_loop(b, r ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
+      event_base_loop(b, s ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
     }
     else
     {
