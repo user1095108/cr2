@@ -56,7 +56,7 @@ template <typename T>
 concept event = std::is_base_of_v<struct event, std::remove_pointer_t<T>>;
 
 template <typename T>
-concept integral = std::is_integral_v<std::remove_cvref_t<T>>;
+concept integral = std::integral<std::remove_cvref_t<T>>;
 
 }
 
