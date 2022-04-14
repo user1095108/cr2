@@ -58,19 +58,15 @@ int main()
         float x, y;
       } e;
 
-      c.await(
-        [&]() noexcept
+      std::thread(
+        [&]
         {
-          std::thread(
-            [&]
-            {
-              e.x = 1.f; e.y = 2.f;
-              evuser_trigger(&e);
-            }
-          ).detach();
-        },
-        &e
-      );
+          e.x = 1.f; e.y = 2.f;
+          evuser_trigger(&e);
+        }
+      ).detach();
+
+      c.await(&e); // race condition
 
       std::cout << e.x << ' ' << e.y << '\n';
 

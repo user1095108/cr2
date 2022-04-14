@@ -46,6 +46,12 @@ inline void timer_cb(evutil_socket_t, short, void* const arg) noexcept
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
 
+template <typename T>
+concept event = std::is_base_of_v<struct event, std::remove_pointer_t<T>>;
+
+template <typename T>
+concept integral = std::is_integral_v<std::remove_cvref_t<T>>;
+
 }
 
 template <typename F, typename R, std::size_t S>
@@ -256,7 +262,7 @@ public:
     return -1 == event_add(&ev, &tv) ? true : (pause(), false);
   }
 
-  auto await(auto&& ...a) noexcept
+  auto await(detail::integral auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -318,7 +324,8 @@ public:
   }
 
   template <class Rep, class Period>
-  auto await(std::chrono::duration<Rep, Period> const d, auto&& ...a) noexcept
+  auto await(std::chrono::duration<Rep, Period> const d,
+    detail::integral auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -385,8 +392,7 @@ public:
     return t;
   }
 
-  bool await(auto&& f, auto* ...ev)
-    noexcept(noexcept(f()))
+  bool await(detail::event auto* ...ev) noexcept
     requires(bool(sizeof...(ev)))
   {
     gnr::forwarder<void() noexcept> g(
@@ -400,11 +406,10 @@ public:
 
     return (((-1 == event_add(ev, {})) || ...)) ?
       true :
-      (f(), pause(), (event_del(ev), ...), false);
+      (pause(), (event_del(ev), ...), false);
   }
 
-  bool await_all(auto&& f, auto* ...ev)
-    noexcept(noexcept(f()))
+  bool await_all(detail::event auto* ...ev) noexcept
     requires(bool(sizeof...(ev)))
   {
     std::size_t c{};
@@ -425,8 +430,6 @@ public:
     }
     else
     {
-      f();
-
       do
       {
         pause();
