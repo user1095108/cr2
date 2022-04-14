@@ -59,7 +59,7 @@ int main()
       } e;
 
       c.await(
-        [&]()
+        [&]() noexcept
         {
           std::thread(
             [&]
