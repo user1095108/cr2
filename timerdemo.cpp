@@ -53,15 +53,26 @@ int main()
   cr2::make_and_run<128>(
     [&](auto& c)
     {
-      struct event e;
+      struct myevent : event
+      {
+        float x, y;
+      } e;
 
       c.await(
         [&]()
         {
-          std::thread([&]{evuser_trigger(&e);}).detach();
+          std::thread(
+            [&]
+            {
+              e.x = 1.f; e.y = 2.f;
+              evuser_trigger(&e);
+            }
+          ).detach();
         },
-        e
+        &e
       );
+
+      std::cout << e.x << ' ' << e.y << '\n';
 
       do
       {

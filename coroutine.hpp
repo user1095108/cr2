@@ -385,7 +385,7 @@ public:
     return t;
   }
 
-  bool await(auto&& f, std::same_as<struct event> auto& ...ev)
+  bool await(auto&& f, auto* ...ev)
     noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
@@ -396,14 +396,14 @@ public:
       }
     );
 
-    (event_assign(&ev, base, -1, 0, detail::timer_cb, &g), ...);
+    (event_assign(ev, base, -1, 0, detail::timer_cb, &g), ...);
 
-    return (((-1 == event_add(&ev, {})) || ...)) ?
+    return (((-1 == event_add(ev, {})) || ...)) ?
       true :
-      (f(), pause(), (event_del(&ev), ...), false);
+      (f(), pause(), (event_del(ev), ...), false);
   }
 
-  bool await_all(auto&& f, std::same_as<struct event> auto& ...ev)
+  bool await_all(auto&& f, auto* ...ev)
     noexcept(noexcept(f()))
     requires(bool(sizeof...(ev)))
   {
@@ -417,9 +417,9 @@ public:
       }
     );
 
-    (event_assign(&ev, base, -1, 0, detail::timer_cb, &g), ...);
+    (event_assign(ev, base, -1, 0, detail::timer_cb, &g), ...);
 
-    if (((-1 == event_add(&ev, {})) || ...))
+    if (((-1 == event_add(ev, {})) || ...))
     {
       return true;
     }
@@ -432,7 +432,7 @@ public:
         pause();
       } while (c != sizeof...(ev));
 
-      return (event_del(&ev), ...), false;
+      return (event_del(ev), ...), false;
     }
   }
 
