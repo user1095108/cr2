@@ -59,14 +59,14 @@ int main()
       } e;
 
       std::thread(
-        [&]
+        [&]() noexcept
         {
           e.x = 1.f; e.y = 2.f;
-          evuser_trigger(&e);
+          evuser_trigger(&e); // race condition, we hope e is initialized
         }
       ).detach();
 
-      c.await(&e); // race condition
+      c.await(&e);
 
       std::cout << e.x << ' ' << e.y << '\n';
 
