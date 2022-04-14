@@ -46,6 +46,12 @@ inline void timer_cb(evutil_socket_t, short, void* const arg) noexcept
   (*static_cast<gnr::forwarder<void()>*>(arg))();
 }
 
+template <class D>
+concept duration = requires(D d)
+  {
+    []<class A, class B>(std::chrono::duration<A, B>){}(d);
+  };
+
 template <typename T>
 concept event = std::is_base_of_v<struct event, std::remove_pointer_t<T>>;
 
@@ -240,8 +246,7 @@ public:
   void suspend() noexcept { suspend<SUSPENDED>(); }
 
   //
-  template <class Rep, class Period>
-  auto await(std::chrono::duration<Rep, Period> const d) noexcept
+  auto await(detail::duration auto const d) noexcept
   {
     gnr::forwarder<void() noexcept> f(
       [&]() noexcept
@@ -323,8 +328,7 @@ public:
     return t;
   }
 
-  template <class Rep, class Period>
-  auto await(std::chrono::duration<Rep, Period> const d,
+  auto await(detail::duration auto const d,
     detail::integral auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
