@@ -396,7 +396,7 @@ public:
       }
     );
 
-    (event_assign(ev, base, -1, 0, detail::timer_cb, &g), ...);
+    (event_assign(ev, base, -1, EV_PERSIST, detail::timer_cb, &g), ...);
 
     return (((-1 == event_add(ev, {})) || ...)) ?
       true :
@@ -417,7 +417,7 @@ public:
       }
     );
 
-    (event_assign(ev, base, -1, 0, detail::timer_cb, &g), ...);
+    (event_assign(ev, base, -1, EV_PERSIST, detail::timer_cb, &g), ...);
 
     if (((-1 == event_add(ev, {})) || ...))
     {
