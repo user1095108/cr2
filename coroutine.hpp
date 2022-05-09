@@ -88,6 +88,16 @@ private:
 
   alignas(std::max_align_t) void* stack_[N];
 
+  //
+  void destroy()
+    noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
+  {
+    if (NEW != state_)
+    {
+      reinterpret_cast<R*>(&r_)->~R();
+    }
+  }
+
   __attribute__((noinline)) void execute() noexcept
   {
     if constexpr(std::is_same_v<detail::empty_t, R>)
@@ -238,16 +248,6 @@ public:
   }
 
   auto state() const noexcept { return state_; }
-
-  //
-  void destroy()
-    noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
-  {
-    if (NEW != state_)
-    {
-      reinterpret_cast<R*>(&r_)->~R();
-    }
-  }
 
   //
   void pause() noexcept { suspend<PAUSED>(); }
