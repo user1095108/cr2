@@ -146,7 +146,7 @@ public:
       !std::is_same_v<detail::empty_t, R>
     )
     {
-      reinterpret_cast<R*>(&r_)->~R();
+      destroy();
     }
   }
 
@@ -240,7 +240,21 @@ public:
   auto state() const noexcept { return state_; }
 
   //
-  void reset() noexcept { state_ = NEW; }
+  void destroy()
+    noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
+  {
+    if (NEW != state_)
+    {
+      reinterpret_cast<R*>(&r_)->~R();
+    }
+  }
+
+  void reset()
+  {
+    destroy();
+
+    state_ = NEW;
+  }
 
   void pause() noexcept { suspend<PAUSED>(); }
   void suspend() noexcept { suspend<SUSPENDED>(); }
