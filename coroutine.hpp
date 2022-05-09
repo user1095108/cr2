@@ -249,6 +249,9 @@ public:
     }
   }
 
+  //
+  void pause() noexcept { suspend<PAUSED>(); }
+
   void reset() noexcept(noexcept(destroy()))
   {
     destroy();
@@ -256,7 +259,6 @@ public:
     state_ = NEW;
   }
 
-  void pause() noexcept { suspend<PAUSED>(); }
   void suspend() noexcept { suspend<SUSPENDED>(); }
 
   //
