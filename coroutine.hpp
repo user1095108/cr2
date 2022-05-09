@@ -11,6 +11,7 @@
 #include "generic/forwarder.hpp"
 #include "generic/invoke.hpp"
 #include "generic/savestate.hpp"
+#include "generic/scopeexit.hpp"
 
 #include <event2/event.h>
 #include <event2/event_struct.h>
@@ -254,7 +255,14 @@ public:
 
   void reset() noexcept(noexcept(destroy()))
   {
-    destroy();
+    if constexpr(
+      !std::is_pointer_v<R> &&
+      !std::is_reference_v<R> &&
+      !std::is_same_v<detail::empty_t, R>
+    )
+    {
+      destroy();
+    }
 
     state_ = NEW;
   }
@@ -560,7 +568,7 @@ auto run(auto&& ...c)
     }
   }
 
-  (c.reset(), ...);
+  SCOPE_EXIT(&, (c.reset(), ...));
 
   if constexpr(sizeof...(c) > 1)
   {
