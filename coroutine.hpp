@@ -568,7 +568,14 @@ auto run(auto&& ...c)
     }
   }
 
-  SCOPE_EXIT(&, (c.reset(), ...));
+  auto const l(
+    [&]() noexcept(noexcept((c.reset(), ...)))
+    {
+      (c.reset(), ...);
+    }
+  );
+
+  SCOPE_EXIT(&, l());
 
   if constexpr(sizeof...(c) > 1)
   {
