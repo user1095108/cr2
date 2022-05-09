@@ -249,7 +249,7 @@ public:
     }
   }
 
-  void reset()
+  void reset() noexcept(noexcept(destroy()))
   {
     destroy();
 
