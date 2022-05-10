@@ -20,7 +20,7 @@
 namespace cr2
 {
 
-enum : std::size_t { default_stack_size = 512 };
+enum : std::size_t { default_stack_size = 512 * 1024 };
 
 enum state {DEAD, RUNNING, PAUSED, NEW, SUSPENDED};
 
@@ -65,7 +65,7 @@ template <typename F, typename R, std::size_t S>
 class coroutine
 {
 private:
-  enum : std::size_t { N = 1024 * S / sizeof(void*) };
+  enum : std::size_t { N = S / sizeof(void*) };
 
   gnr::statebuf in_, out_;
 
@@ -601,6 +601,21 @@ auto make_and_run(auto&& ...c)
   requires(sizeof...(S) == sizeof...(c))
 {
   return run(make_plain<S>(std::forward<decltype(c)>(c))...);
+}
+
+namespace literals
+{
+
+constexpr std::size_t operator ""_k(unsigned long long const a) noexcept
+{
+  return 1024ULL * a;
+}
+
+constexpr std::size_t operator ""_M(unsigned long long const a) noexcept
+{
+  return 1024ULL * 1024ULL * a;
+}
+
 }
 
 }

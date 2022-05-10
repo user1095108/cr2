@@ -2,6 +2,8 @@
 
 #include "coroutine.hpp"
 
+using namespace cr2::literals;
+
 int main()
 {
   auto c0(cr2::make_plain(
@@ -18,7 +20,7 @@ int main()
 
   std::cout <<
     std::get<0>(
-      cr2::make_and_run<128, 128>(
+      cr2::make_and_run<128_k, 128_k>(
         [&](auto& c)
         {
           std::intmax_t j(5);

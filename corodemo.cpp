@@ -2,6 +2,8 @@
 
 #include "coroutine.hpp"
 
+using namespace cr2::literals;
+
 struct A
 {
   ~A()
@@ -12,7 +14,7 @@ struct A
 
 int main()
 {
-  auto c0(cr2::make_plain<128>(
+  auto c0(cr2::make_plain<128_k>(
       [](auto& c)
       {
         for (;;)
@@ -24,7 +26,7 @@ int main()
     )
   );
 
-  cr2::make_and_run<128, 128>(
+  cr2::make_and_run<128_k, 128_k>(
     [&](auto& c)
     {
       A a;

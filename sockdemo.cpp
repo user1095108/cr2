@@ -5,12 +5,13 @@
 
 #include "coroutine.hpp"
 
+using namespace cr2::literals;
 using namespace std::literals::string_literals;
 
 int main()
 {
   auto const t(
-    cr2::make_and_run<128, 512>(
+    cr2::make_and_run<128_k, 512_k>(
       [](auto& c)
       {
         std::intmax_t j(10);
