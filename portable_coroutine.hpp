@@ -8,6 +8,8 @@
 
 #include "boost/context/fiber.hpp"
 
+#include "generic/scopeexit.hpp"
+
 #include "common.hpp"
 
 namespace cr2
@@ -24,6 +26,8 @@ private:
 
   enum state state_;
 
+  F f_;
+
   [[no_unique_address]]	std::conditional_t<
     std::is_pointer_v<R>,
     R,
@@ -39,6 +43,15 @@ private:
   > r_;
 
   //
+  void destroy()
+    noexcept(std::is_nothrow_destructible_v<R>)
+  {
+    if (NEW != state_)
+    {
+      std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
+    }
+  }
+
   template <enum state State>
   void suspend()
   {
@@ -51,37 +64,9 @@ public:
   explicit portable_coroutine(F&& f)
     noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
     state_{NEW},
-    fi_(std::allocator_arg_t{},
-      boost::context::fixedsize_stack(S),
-      [f(std::move(f)), this](auto&& fi)
-      {
-        // The parameter f represents the current fiber from which this fiber was resumed (e.g. that has called fiber).
-        // On return the context-function of the current fiber has to specify an fiber to which the execution control is transferred after termination of the current fiber
-        fi_ = std::move(fi);
-
-        if constexpr(std::is_same_v<detail::empty_t, R>)
-        {
-          f(*this);
-        }
-        else if constexpr(std::is_pointer_v<R>)
-        {
-          r_ = f(*this);
-        }
-        else if constexpr(std::is_reference_v<R>)
-        {
-          r_ = &f(*this);
-        }
-        else
-        {
-          ::new (std::addressof(r_)) R(f(*this));
-        }
-
-        state_ = DEAD;
-
-        return std::move(fi_);
-      }
-    )
+    f_(std::move(f))
   {
+    reset();
   }
 
   ~portable_coroutine()
@@ -98,10 +83,7 @@ public:
       !std::is_same_v<detail::empty_t, R>
     )
     {
-      if (NEW != state_)
-      {
-        std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
-      }
+      destroy();
     }
   }
 
@@ -151,6 +133,51 @@ public:
   }
 
   auto state() const noexcept { return state_; }
+
+  //
+  void reset()
+  {
+    if constexpr(
+      !std::is_pointer_v<R> &&
+      !std::is_reference_v<R> &&
+      !std::is_same_v<detail::empty_t, R>
+    )
+    {
+      destroy();
+    }
+
+    fi_ = {
+      std::allocator_arg_t{},
+      boost::context::fixedsize_stack(S),
+      [this](auto&& fi)
+      {
+        fi_ = std::move(fi);
+
+        if constexpr(std::is_same_v<detail::empty_t, R>)
+        {
+          f_(*this);
+        }
+        else if constexpr(std::is_pointer_v<R>)
+        {
+          r_ = f_(*this);
+        }
+        else if constexpr(std::is_reference_v<R>)
+        {
+          r_ = &f_(*this);
+        }
+        else
+        {
+          ::new (std::addressof(r_)) R(f_(*this));
+        }
+
+        state_ = DEAD;
+
+        return std::move(fi_);
+      }
+    };
+
+    state_ = NEW;
+  }
 
   void suspend() { return suspend<SUSPENDED>(); }
 
@@ -245,6 +272,15 @@ auto run(auto&& ...c)
       );
     } while (s);
   }
+
+  auto const l(
+    [&]() noexcept(noexcept((c.reset(), ...)))
+    {
+      (c.reset(), ...);
+    }
+  );
+
+  SCOPE_EXIT(&, l());
 
   if constexpr(sizeof...(c) > 1)
   {
