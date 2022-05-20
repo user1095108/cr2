@@ -26,35 +26,36 @@ int main()
     )
   );
 
-  std::cout << std::get<1>(
-    cr2::basic::make_and_run<128_k, 128_k>(
-      [&](auto& c)
-      {
-        A a;
-
-        for (int i{}; i != 3; ++i)
+  std::cout <<
+    std::get<1>(
+      cr2::basic::make_and_run<128_k, 128_k>(
+        [&](auto& c)
         {
-          std::cout << i << '\n';
+          A a;
 
-          c.suspend_to(c0);
-        }
-      },
-      [](auto& c)
-      {
-        std::intmax_t j(5);
+          for (int i{}; i != 3; ++i)
+          {
+            std::cout << i << '\n';
 
-        for (auto i(j - 1); 1 != i; --i)
+            c.suspend_to(c0);
+          }
+        },
+        [](auto& c)
         {
-          std::cout << "coro2\n";
+          std::intmax_t j(5);
 
-          j *= i;
-          c.suspend();
+          for (auto i(j - 1); 1 != i; --i)
+          {
+            std::cout << "coro2\n";
+
+            j *= i;
+            c.suspend();
+          }
+
+          return j;
         }
-
-        return j;
-      }
-    )
-  ) << '\n';
+      )
+    ) << '\n';
 
   return 0;
 }
