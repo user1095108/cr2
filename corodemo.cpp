@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "coroutine.hpp"
+#include "basic_coroutine.hpp"
 
 using namespace cr2::literals;
 
@@ -40,13 +40,9 @@ int main()
     },
     [](auto& c)
     {
-      c.await(EV_READ, STDIN_FILENO);
       std::cout << "coro2\n";
     }
   );
-
-  event_base_free(cr2::base);
-  libevent_global_shutdown();
 
   return 0;
 }
