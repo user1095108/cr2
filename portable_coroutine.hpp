@@ -53,7 +53,7 @@ public:
     state_{NEW},
     fi_(std::allocator_arg_t{},
       boost::context::fixedsize_stack(S),
-      [f(std::move(f)), this](boost::context::fiber&& fi)
+      [f(std::move(f)), this](auto&& fi)
       {
         // The parameter f represents the current fiber from which this fiber was resumed (e.g. that has called fiber).
         // On return the context-function of the current fiber has to specify an fiber to which the execution control is transferred after termination of the current fiber
