@@ -60,7 +60,9 @@ public:
   explicit portable_coroutine(F&& f)
     noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
     state_{SUSPENDED},
-    fi_([f(std::move(f)), this](boost::context::fiber&& fi)
+    fi_(std::allocator_arg_t{},
+      boost::context::fixedsize_stack(S),
+      [f(std::move(f)), this](boost::context::fiber&& fi)
       {
         // The parameter f represents the current fiber from which this fiber was resumed (e.g. that has called fiber).
         // On return the context-function of the current fiber has to specify an fiber to which the execution control is transferred after termination of the current fiber
