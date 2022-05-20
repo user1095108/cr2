@@ -546,7 +546,7 @@ auto run(auto&& ...c)
   {
     auto const b(base ? base : base = event_base_new());
 
-    std::size_t p, s;
+    bool p, s;
 
     do
     {
@@ -555,7 +555,7 @@ auto run(auto&& ...c)
       (
         (
           (c.state() >= NEW ? c() : void()),
-          (s += SUSPENDED == c.state(), p += PAUSED == c.state())
+          (s = s || (SUSPENDED == c.state()), p = p || (PAUSED == c.state()))
         ),
         ...
       );

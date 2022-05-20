@@ -303,7 +303,7 @@ auto run(auto&& ...c)
   requires(sizeof...(c) >= 1)
 {
   {
-    std::size_t s;
+    bool s;
 
     do
     {
@@ -312,7 +312,7 @@ auto run(auto&& ...c)
       (
         (
           (c.state() >= NEW ? c() : void()),
-          (s += SUSPENDED == c.state())
+          (s = s || (SUSPENDED == c.state()))
         ),
         ...
       );
