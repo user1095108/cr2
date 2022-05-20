@@ -464,14 +464,7 @@ public:
   template <typename A, typename B, std::size_t C>
   void suspend_to(event_coroutine<A, B, C>& c) noexcept
   { // suspend means "out"
-    if (state_ = SUSPENDED; savestate(in_))
-    {
-      clobber_all()
-    }
-    else
-    {
-      c(); restorestate(out_);
-    }
+    c(); suspend();
   }
 };
 
