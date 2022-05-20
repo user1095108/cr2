@@ -543,26 +543,26 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
-  for (auto const b(base ? base : base = event_base_new());;)
   {
-    std::size_t p{}, s{};
+    auto const b(base ? base : base = event_base_new());
 
-    (
-      (
-        (c.state() >= NEW ? c() : void()),
-        (SUSPENDED == c.state() ? ++s : p += PAUSED == c.state())
-      ),
-      ...
-    );
+    std::size_t p, s;
 
-    if (s || p)
+    do
     {
+      p = s = {};
+
+      (
+        (
+          (c.state() >= NEW ? c() : void()),
+          (s += SUSPENDED == c.state(), p += PAUSED == c.state())
+        ),
+        ...
+      );
+
       event_base_loop(b, s ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
     }
-    else
-    {
-      break;
-    }
+    while (p || s);
   }
 
   auto const l(
