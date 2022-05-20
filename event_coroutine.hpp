@@ -1,5 +1,5 @@
-#ifndef CR2_COROUTINE_HPP
-# define CR2_COROUTINE_HPP
+#ifndef CR2_EVENT_COROUTINE_HPP
+# define CR2_EVENT_COROUTINE_HPP
 # pragma once
 
 #include <cstddef> // std::size_t
@@ -613,4 +613,4 @@ auto make_and_run(auto&& ...c)
 
 }
 
-#endif // CR2_COROUTINE_HPP
+#endif // CR2_EVENT_COROUTINE_HPP
