@@ -546,9 +546,7 @@ auto run(auto&& ...c)
   {
     auto const b(base ? base : base = event_base_new());
 
-    bool p, s;
-
-    do
+    for (bool p, s;;)
     {
       p = s = {};
 
@@ -560,9 +558,15 @@ auto run(auto&& ...c)
         ...
       );
 
-      event_base_loop(b, s ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
+      if (p || s)
+      {
+        event_base_loop(b, s ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
+      }
+      else
+      {
+        break;
+      }
     }
-    while (p || s);
   }
 
   auto const l(
