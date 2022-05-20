@@ -2,7 +2,9 @@
 
 #include "curl/curl.h"
 
-#include "event_coroutine.hpp"
+#include "generic/forwarder.hpp"
+
+#include "basic_coroutine.hpp"
 
 namespace curl
 {
@@ -52,7 +54,7 @@ int main()
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
   auto const t(
-    cr2::event::make_and_run(
+    cr2::basic::make_and_run(
       [](auto& c)
       {
         std::intmax_t j(5);
@@ -83,9 +85,6 @@ int main()
   std::cout << std::get<0>(t) << std::endl;
 
   curl_global_cleanup();
-
-  event_base_free(cr2::base);
-  libevent_global_shutdown();
 
   return 0;
 }
