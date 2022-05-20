@@ -95,7 +95,7 @@ private:
   {
     if (NEW != state_)
     {
-      std::launder(reinterpret_cast<R*>(&r_))->~R();
+      std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
     }
   }
 
