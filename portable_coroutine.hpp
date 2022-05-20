@@ -50,7 +50,7 @@ private:
 public:
   explicit portable_coroutine(F&& f)
     noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
-    state_{SUSPENDED},
+    state_{NEW},
     fi_(std::allocator_arg_t{},
       boost::context::fixedsize_stack(S),
       [f(std::move(f)), this](boost::context::fiber&& fi)
