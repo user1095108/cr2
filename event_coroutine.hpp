@@ -2,6 +2,10 @@
 # define CR2_EVENT_COROUTINE_HPP
 # pragma once
 
+#include <event2/event.h>
+#include <event2/event_struct.h>
+#include <event2/thread.h>
+
 #include <cstddef> // std::size_t
 #include <algorithm> // ranges
 #include <chrono>
@@ -13,10 +17,6 @@
 #include "generic/invoke.hpp"
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
-
-#include <event2/event.h>
-#include <event2/event_struct.h>
-#include <event2/thread.h>
 
 #include "literals.hpp"
 
