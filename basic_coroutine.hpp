@@ -9,24 +9,10 @@
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
 
-#include "literals.hpp"
+#include "common.hpp"
 
 namespace cr2
 {
-
-enum : std::size_t { default_stack_size = 512 * 1024 };
-
-enum state {DEAD, RUNNING, NEW, SUSPENDED};
-
-namespace detail
-{
-
-struct empty_t{};
-
-template <typename T>
-using transform_void_t = std::conditional_t<std::is_void_v<T>, empty_t, T>;
-
-}
 
 template <typename F, typename R, std::size_t S>
 class basic_coroutine

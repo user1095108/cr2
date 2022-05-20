@@ -18,24 +18,15 @@
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
 
-#include "literals.hpp"
+#include "common.hpp"
 
 namespace cr2
 {
-
-enum : std::size_t { default_stack_size = 512 * 1024 };
-
-enum state {DEAD, RUNNING, PAUSED, NEW, SUSPENDED};
 
 static inline struct event_base* base;
 
 namespace detail
 {
-
-struct empty_t{};
-
-template <typename T>
-using transform_void_t = std::conditional_t<std::is_void_v<T>, empty_t, T>;
 
 extern "C"
 inline void socket_cb(evutil_socket_t const s, short const f,
