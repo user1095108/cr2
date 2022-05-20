@@ -2,7 +2,7 @@
 
 #include "curl/curl.h"
 
-#include "coroutine.hpp"
+#include "event_coroutine.hpp"
 
 namespace curl
 {
@@ -52,7 +52,7 @@ int main()
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
   auto const t(
-    cr2::make_and_run(
+    cr2::event::make_and_run(
       [](auto& c)
       {
         std::intmax_t j(5);

@@ -17,6 +17,8 @@
 #include <event2/event_struct.h>
 #include <event2/thread.h>
 
+#include "literals.hpp"
+
 namespace cr2
 {
 
@@ -48,21 +50,21 @@ inline void timer_cb(evutil_socket_t, short, void* const arg) noexcept
 }
 
 template <class D>
-concept duration = requires(D d)
+concept duration_c = requires(D d)
   {
     []<class A, class B>(std::chrono::duration<A, B>){}(d);
   };
 
 template <typename T>
-concept event = std::is_base_of_v<struct event, std::remove_pointer_t<T>>;
+concept event_c = std::is_base_of_v<struct event, std::remove_pointer_t<T>>;
 
 template <typename T>
-concept integral = std::integral<std::remove_cvref_t<T>>;
+concept integral_c = std::integral<std::remove_cvref_t<T>>;
 
 }
 
 template <typename F, typename R, std::size_t S>
-class coroutine
+class event_coroutine
 {
 private:
   enum : std::size_t { N = S / sizeof(void*) };
@@ -136,14 +138,14 @@ private:
   }
 
 public:
-  explicit coroutine(F&& f)
+  explicit event_coroutine(F&& f)
     noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
     state_{NEW},
     f_(std::move(f))
   {
   }
 
-  ~coroutine()
+  ~event_coroutine()
     noexcept(
       std::is_pointer_v<R> ||
       std::is_reference_v<R> ||
@@ -161,8 +163,8 @@ public:
     }
   }
 
-  coroutine(coroutine const&) = delete;
-  coroutine(coroutine&&) = default;
+  event_coroutine(event_coroutine const&) = delete;
+  event_coroutine(event_coroutine&&) = default;
 
   explicit operator bool() const noexcept { return bool(state_); }
 
@@ -270,7 +272,7 @@ public:
   void suspend() noexcept { suspend<SUSPENDED>(); }
 
   //
-  auto await(detail::duration auto const d) noexcept
+  auto await(detail::duration_c auto const d) noexcept
   {
     gnr::forwarder<void() noexcept> f(
       [&]() noexcept
@@ -291,7 +293,7 @@ public:
     return -1 == event_add(&ev, &tv) ? true : (pause(), false);
   }
 
-  auto await(detail::integral auto&& ...a) noexcept
+  auto await(detail::integral_c auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -352,8 +354,8 @@ public:
     return t;
   }
 
-  auto await(detail::duration auto const d,
-    detail::integral auto&& ...a) noexcept
+  auto await(detail::duration_c auto const d,
+    detail::integral_c auto&& ...a) noexcept
     requires(!(sizeof...(a) % 2))
   {
     auto t([&]<auto ...I>(std::index_sequence<I...>) noexcept
@@ -420,7 +422,7 @@ public:
     return t;
   }
 
-  bool await(detail::event auto* ...ev) noexcept
+  bool await(detail::event_c auto* ...ev) noexcept
     requires(bool(sizeof...(ev)))
   {
     gnr::forwarder<void() noexcept> g(
@@ -437,7 +439,7 @@ public:
       (pause(), (event_del(ev), ...), false);
   }
 
-  bool await_all(detail::event auto* ...ev) noexcept
+  bool await_all(detail::event_c auto* ...ev) noexcept
     requires(bool(sizeof...(ev)))
   {
     std::size_t c{};
@@ -468,7 +470,7 @@ public:
   }
 
   template <typename A, typename B, std::size_t C>
-  void suspend_to(coroutine<A, B, C>& c) noexcept
+  void suspend_to(event_coroutine<A, B, C>& c) noexcept
   { // suspend means "out"
     if (state_ = SUSPENDED; savestate(in_))
     {
@@ -481,16 +483,19 @@ public:
   }
 };
 
+namespace event
+{
+
 template <std::size_t S = default_stack_size>
 auto make_plain(auto&& f)
   noexcept(noexcept(
-      coroutine<
+      event_coroutine<
         std::remove_cvref_t<decltype(f)>,
         detail::transform_void_t<
           decltype(
             std::declval<std::remove_cvref_t<decltype(f)>>()(
               std::declval<
-                coroutine<std::remove_cvref_t<decltype(f)>, detail::empty_t, S>&
+                event_coroutine<std::remove_cvref_t<decltype(f)>, detail::empty_t, S>&
               >()
             )
           )
@@ -503,11 +508,11 @@ auto make_plain(auto&& f)
   using F = std::remove_cvref_t<decltype(f)>;
   using R = detail::transform_void_t<
     decltype(std::declval<F>()(
-        std::declval<coroutine<F, detail::empty_t, S>&>()
+        std::declval<event_coroutine<F, detail::empty_t, S>&>()
       )
     )
   >;
-  using C = coroutine<F, R, S>;
+  using C = event_coroutine<F, R, S>;
 
   return C(std::forward<decltype(f)>(f));
 }
@@ -518,11 +523,11 @@ auto make_shared(auto&& f)
   using F = std::remove_cvref_t<decltype(f)>;
   using R = detail::transform_void_t<
     decltype(std::declval<F>()(
-        std::declval<coroutine<F, detail::empty_t, S>&>()
+        std::declval<event_coroutine<F, detail::empty_t, S>&>()
       )
     )
   >;
-  using C = coroutine<F, R, S>;
+  using C = event_coroutine<F, R, S>;
 
   return std::make_shared<C>(std::forward<decltype(f)>(f));
 }
@@ -533,11 +538,11 @@ auto make_unique(auto&& f)
   using F = std::remove_cvref_t<decltype(f)>;
   using R = detail::transform_void_t<
     decltype(std::declval<F>()(
-        std::declval<coroutine<F, detail::empty_t, S>&>()
+        std::declval<event_coroutine<F, detail::empty_t, S>&>()
       )
     )
   >;
-  using C = coroutine<F, R, S>;
+  using C = event_coroutine<F, R, S>;
 
   return std::make_unique<C>(std::forward<decltype(f)>(f));
 }
@@ -601,19 +606,6 @@ auto make_and_run(auto&& ...c)
   requires(sizeof...(S) == sizeof...(c))
 {
   return run(make_plain<S>(std::forward<decltype(c)>(c))...);
-}
-
-namespace literals
-{
-
-constexpr std::size_t operator ""_k(unsigned long long const a) noexcept
-{
-  return 1024ULL * a;
-}
-
-constexpr std::size_t operator ""_M(unsigned long long const a) noexcept
-{
-  return 1024ULL * 1024ULL * a;
 }
 
 }

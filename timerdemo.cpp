@@ -1,7 +1,7 @@
 #include <iostream>
 #include <thread>
 
-#include "coroutine.hpp"
+#include "event_coroutine.hpp"
 
 using namespace cr2::literals;
 using namespace std::literals::chrono_literals;
@@ -12,7 +12,7 @@ int main()
 
   std::cout <<
     std::get<2>(
-      cr2::make_and_run<128_k, 128_k, 128_k>(
+      cr2::event::make_and_run<128_k, 128_k, 128_k>(
         [](auto& c)
         {
           unsigned i(1);
@@ -51,7 +51,7 @@ int main()
     ) <<
     std::endl;
 
-  cr2::make_and_run<128_k>(
+  cr2::event::make_and_run<128_k>(
     [&](auto& c)
     {
       struct myevent : event

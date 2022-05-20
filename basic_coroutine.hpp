@@ -13,12 +13,14 @@
 #include "generic/savestate.hpp"
 #include "generic/scopeexit.hpp"
 
+#include "literals.hpp"
+
 namespace cr2
 {
 
 enum : std::size_t { default_stack_size = 512 * 1024 };
 
-enum state {DEAD, RUNNING, PAUSED, NEW, SUSPENDED};
+enum state {DEAD, RUNNING, NEW, SUSPENDED};
 
 namespace detail
 {
@@ -220,8 +222,6 @@ public:
   auto state() const noexcept { return state_; }
 
   //
-  void pause() noexcept { suspend<PAUSED>(); }
-
   void reset() noexcept(noexcept(destroy()))
   {
     if constexpr(
@@ -251,6 +251,9 @@ public:
     }
   }
 };
+
+namespace basic
+{
 
 template <std::size_t S = default_stack_size>
 auto make_plain(auto&& f)
@@ -317,20 +320,22 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
-  std::size_t p, s;
-
-  do
   {
-    p = s = {};
+    std::size_t s;
 
-    (
+    do
+    {
+      s = {};
+
       (
-        (c.state() >= NEW ? c() : void()),
-        (SUSPENDED == c.state() ? ++s : p += PAUSED == c.state())
-      ),
-      ...
-    );
-  } while (s || p);
+        (
+          (c.state() >= NEW ? c() : void()),
+          (s += SUSPENDED == c.state())
+        ),
+        ...
+      );
+    } while (s);
+  }
 
   auto const l(
     [&]() noexcept(noexcept((c.reset(), ...)))
@@ -365,19 +370,6 @@ auto make_and_run(auto&& ...c)
   requires(sizeof...(S) == sizeof...(c))
 {
   return run(make_plain<S>(std::forward<decltype(c)>(c))...);
-}
-
-namespace literals
-{
-
-constexpr std::size_t operator ""_k(unsigned long long const a) noexcept
-{
-  return 1024ULL * a;
-}
-
-constexpr std::size_t operator ""_M(unsigned long long const a) noexcept
-{
-  return 1024ULL * 1024ULL * a;
 }
 
 }

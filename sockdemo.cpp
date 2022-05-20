@@ -3,7 +3,7 @@
 
 #include "generic/scopeexit.hpp"
 
-#include "coroutine.hpp"
+#include "event_coroutine.hpp"
 
 using namespace cr2::literals;
 using namespace std::literals::string_literals;
@@ -11,7 +11,7 @@ using namespace std::literals::string_literals;
 int main()
 {
   auto const t(
-    cr2::make_and_run<128_k, 512_k>(
+    cr2::event::make_and_run<128_k, 512_k>(
       [](auto& c)
       {
         std::intmax_t j(10);
