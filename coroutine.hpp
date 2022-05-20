@@ -82,7 +82,7 @@ private:
       std::conditional_t<
         std::is_same_v<detail::empty_t, R>,
         detail::empty_t,
-        std::aligned_storage_t<sizeof(R)>
+        std::aligned_storage_t<sizeof(R), alignof(R)>
       >
     >
   > r_;
@@ -95,7 +95,7 @@ private:
   {
     if (NEW != state_)
     {
-      reinterpret_cast<R*>(&r_)->~R();
+      std::launder(reinterpret_cast<R*>(&r_))->~R();
     }
   }
 
