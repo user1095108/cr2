@@ -39,15 +39,6 @@ private:
   > r_;
 
   //
-  void destroy()
-    noexcept(noexcept(reinterpret_cast<R*>(&r_)->~R()))
-  {
-    if (NEW != state_)
-    {
-      std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
-    }
-  }
-
   template <enum state State>
   void suspend()
   {
@@ -98,7 +89,7 @@ public:
       std::is_pointer_v<R> ||
       std::is_reference_v<R> ||
       std::is_same_v<detail::empty_t, R> ||
-      noexcept(reinterpret_cast<R*>(&r_)->~R())
+      std::is_nothrow_destructible_v<R>
     )
   {
     if constexpr(
@@ -107,7 +98,10 @@ public:
       !std::is_same_v<detail::empty_t, R>
     )
     {
-      destroy();
+      if (NEW != state_)
+      {
+        std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
+      }
     }
   }
 
