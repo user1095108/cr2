@@ -3,7 +3,7 @@
 # pragma once
 
 #include <cstddef> // std::size_t
-#include <algorithm>
+#include <algorithm> // ranges
 #include <chrono>
 #include <concepts>
 #include <memory> // std::unique_ptr, std::shared_ptr
