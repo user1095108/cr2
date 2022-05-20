@@ -7,6 +7,7 @@
 #include <chrono>
 #include <concepts>
 #include <memory> // std::unique_ptr, std::shared_ptr
+#include <tuple>
 
 #include "generic/forwarder.hpp"
 #include "generic/invoke.hpp"
