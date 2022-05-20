@@ -94,7 +94,6 @@ public:
 
   void operator()()
   {
-    assert(state_ >= NEW);
     state_ = RUNNING;
 
     fi_ = std::move(fi_).resume();
