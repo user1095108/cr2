@@ -51,6 +51,12 @@ private:
   void destroy()
     noexcept(std::is_nothrow_destructible_v<R>)
   {
+    static_assert(
+      !std::is_pointer_v<R> &&
+      !std::is_reference_v<R> &&
+      !std::is_same_v<detail::empty_t, R>
+    );
+
     if (NEW != state_)
     {
       std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
