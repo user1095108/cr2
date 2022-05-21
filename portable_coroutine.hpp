@@ -205,7 +205,11 @@ auto make_plain(auto&& f)
           decltype(
             std::declval<std::remove_cvref_t<decltype(f)>>()(
               std::declval<
-                portable_coroutine<std::remove_cvref_t<decltype(f)>, detail::empty_t, S>&
+                portable_coroutine<
+                  std::remove_cvref_t<decltype(f)>,
+                  detail::empty_t,
+                  S
+                >&
               >()
             )
           )
