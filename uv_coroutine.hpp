@@ -223,7 +223,7 @@ public:
   }
 
   template <auto G>
-  auto await(uv_fs_t* const fs, auto&& ...a) noexcept
+  auto await(uv_fs_t* const uvfs, auto&& ...a) noexcept
   {
     gnr::forwarder<void() noexcept> g(
       [&]() noexcept
@@ -232,22 +232,23 @@ public:
       }
     );
 
-    fs->data = &g;
+    uvfs->data = &g;
 
     if (auto const r(G(uv_default_loop(),
-        fs,
+        uvfs,
         std::forward<decltype(a)>(a)...,
         detail::uv::uv_fs_cb
-      )); r < 0)
+      )
+    ); r < 0)
     {
-      return decltype(fs->result)(r);
+      return decltype(uvfs->result)(r);
     }
 
     pause();
 
-    SCOPE_EXIT(fs, uv_fs_req_cleanup(fs));
+    SCOPE_EXIT(uvfs, uv_fs_req_cleanup(uvfs));
 
-    return fs->result;
+    return uvfs->result;
   }
 
   template <auto G>
@@ -290,13 +291,13 @@ public:
 
     uvs->data = &t;
 
-    if (auto const r(G(uvs,
+    if (s = (G(uvs,
         detail::uv::uv_alloc_cb,
         detail::uv::uv_read_cb
       )
-    ); r < 0)
+    ); s < 0)
     {
-      return std::pair<ssize_t, uv_buf_t const*>{r, {}};
+      return std::pair{s, b};
     }
 
     pause();
