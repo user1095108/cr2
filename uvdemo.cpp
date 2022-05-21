@@ -27,30 +27,32 @@ int main()
         {
           std::string r;
 
-          char data[64_k];
-
-          auto const buf(uv_buf_init(data, sizeof(data)));
-
-          uv_fs_t uvfs;
-
-          auto const uvf(c.template await<uv_fs_open>(&uvfs,
-            "uvdemo.cpp", 0, O_RDONLY));
-
-          for (std::intmax_t off{};;)
           {
-            if (auto const sz(c.template await<uv_fs_read>(&uvfs, uvf, &buf,
-              1, off)); sz > 0)
-            {
-              off += sz;
-              r.append(data, sz);
-            }
-            else
-            {
-              break;
-            }
-          }
+            char data[64_k];
 
-          c.template await<uv_fs_close>(&uvfs, uvf);
+            auto const buf(uv_buf_init(data, sizeof(data)));
+
+            uv_fs_t uvfs;
+
+            auto const uvf(c.template await<uv_fs_open>(&uvfs,
+              "uvdemo.cpp", 0, O_RDONLY));
+
+            for (std::intmax_t off{};;)
+            {
+              if (auto const sz(c.template await<uv_fs_read>(&uvfs, uvf, &buf,
+                1, off)); sz > 0)
+              {
+                off += sz;
+                r.append(data, sz);
+              }
+              else
+              {
+                break;
+              }
+            }
+
+            c.template await<uv_fs_close>(&uvfs, uvf);
+          }
 
           return r;
         }
