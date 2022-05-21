@@ -291,9 +291,7 @@ public:
       }
     );
 
-    char data[65536];
-
-    std::pair<void*, char*> p(&g, data);
+    std::pair<void*, char*> p(&g, static_cast<char*>(uvs->data));
 
     uvs->data = &p;
 
