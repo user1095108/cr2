@@ -15,42 +15,10 @@
 
 #include "common.hpp"
 
+#include "uv_callbacks.hpp"
+
 namespace cr2
 {
-
-namespace detail
-{
-
-extern "C"
-inline void on_alloc_cb(uv_handle_t* const h, std::size_t const sz,
-  uv_buf_t* const buf) noexcept
-{
-  buf->base = static_cast<char*>(malloc(sz));
-  buf->len = sz;
-  std::cout << "?????" << static_cast<void*>(buf->base) << std::endl;
-}
-
-extern "C"
-inline void on_fs_cb(uv_fs_t* const req) noexcept
-{
-  (*static_cast<gnr::forwarder<void()>*>(req->data))();
-}
-
-extern "C"
-inline void on_stream_cb(uv_stream_t* const str,
-  ssize_t const sz, uv_buf_t const* const buf) noexcept
-{
-  (*static_cast<gnr::forwarder<void(ssize_t, uv_buf_t const*)>*>(
-    str->data))(sz, buf);
-}
-
-extern "C"
-inline void on_connect_cb(uv_connect_t* const req, int const status) noexcept
-{
-  (*static_cast<gnr::forwarder<void(int)>*>(req->data))(status);
-}
-
-}
 
 template <typename F, typename R, std::size_t S>
 class uv_coroutine
@@ -225,7 +193,8 @@ public:
     c(); suspend();
   }
 
-  auto await(auto f, uv_fs_t* const fs, auto&& ...a) noexcept
+  template <auto G>
+  auto await(uv_fs_t* const fs, auto&& ...a) noexcept
   {
     gnr::forwarder<void() noexcept> g(
       [&]() noexcept
@@ -236,19 +205,17 @@ public:
 
     fs->data = &g;
 
-    f(uv_default_loop(),
+    G(uv_default_loop(),
       fs,
       std::forward<decltype(a)>(a)...,
-      detail::on_fs_cb
+      detail::uv::uv_fs_cb
     );
 
     pause();
 
-    auto const r(fs->result);
+    SCOPE_EXIT(fs, uv_fs_req_cleanup(fs));
 
-    uv_fs_req_cleanup(fs);
-
-    return r;
+    return fs->result;
   }
 
   template <auto G>
@@ -268,7 +235,7 @@ public:
 
     G(uvc,
       std::forward<decltype(a)>(a)...,
-      detail::on_connect_cb
+      detail::uv::uv_connect_cb
     );
 
     pause();
@@ -277,33 +244,54 @@ public:
   }
 
   template <auto G>
-  auto await(uv_stream_t* const uvs, auto&& ...a) noexcept
+  auto await(uv_handle_t* const uvh) noexcept
+    requires(G == uv_close)
   {
-    ssize_t r;
+    gnr::forwarder<void() noexcept> g(
+      [&]() noexcept
+      {
+        state_ = SUSPENDED;
+      }
+    );
+
+    uvh->data = &g;
+
+    G(uvh, detail::uv::uv_close_cb);
+
+    pause();
+  }
+
+  template <auto G>
+  auto await(uv_stream_t* const uvs) noexcept
+    requires(G == uv_read_start)
+  {
+    ssize_t s;
     uv_buf_t const* b;
 
     gnr::forwarder<void(ssize_t, uv_buf_t const*) noexcept> g(
       [&](ssize_t const sz, uv_buf_t const* const buf) noexcept
       {
-        r = sz;
+        s = sz;
         b = buf;
         state_ = SUSPENDED;
       }
     );
 
-    uvs->data = &g;
+    char data[65536];
+
+    auto t(std::make_pair<void*, char*>(&g, data));
+
+    uvs->data = &t;
 
     G(uvs,
-      std::forward<decltype(a)>(a)...,
-      detail::on_alloc_cb,
-      detail::on_stream_cb
+      detail::uv::uv_alloc_cb,
+      detail::uv::uv_read_cb
     );
 
     pause();
 
-    return std::tuple{r, b};
+    return std::tuple{s, b};
   }
-
 };
 
 namespace uv

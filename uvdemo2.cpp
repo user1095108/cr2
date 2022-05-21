@@ -52,17 +52,17 @@ int main()
                 sz >= 0)
               {
                 r.append(buf->base, sz);
-                free(buf->base);
               }
               else
               {
-                free(buf->base);
                 break;
               }
             }
           }
 
           uv_read_stop((uv_stream_t*)&client);
+
+          c.template await<uv_close>((uv_handle_t*)&client);
 
           return r;
         }
