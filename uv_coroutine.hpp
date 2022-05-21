@@ -296,7 +296,7 @@ public:
         detail::uv::uv_read_cb
     ); s < 0)
     {
-      return std::pair{s, nullptr};
+      return std::pair{s, decltype(b){}};
     }
 
     pause();
