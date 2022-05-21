@@ -37,7 +37,7 @@ int main()
             auto const uvf(c.template await<uv_fs_open>(&uvfs,
               "uvdemo.cpp", 0, O_RDONLY));
 
-            for (std::intmax_t off{};;)
+            for (std::uintmax_t off{};;)
             {
               if (auto const sz(c.template await<uv_fs_read>(&uvfs, uvf, &buf,
                 1, off)); sz > 0)
