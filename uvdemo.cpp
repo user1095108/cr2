@@ -31,9 +31,9 @@ int main()
 
           auto const buf(uv_buf_init(data, sizeof(data)));
 
-          uv_fs_t fs;
+          uv_fs_t uvfs;
 
-          auto const uvf(c.template await<uv_fs_open>(&fs,
+          auto const uvf(c.template await<uv_fs_open>(&uvfs,
             "uvdemo.cpp", 0, O_RDONLY));
 
           for (std::intmax_t off{};;)
