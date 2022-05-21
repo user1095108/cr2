@@ -291,13 +291,12 @@ public:
 
     uvs->data = &t;
 
-    if (s = (G(uvs,
+    if (s = G(uvs,
         detail::uv::uv_alloc_cb,
         detail::uv::uv_read_cb
-      )
     ); s < 0)
     {
-      return std::pair{s, b};
+      return std::pair{s, nullptr};
     }
 
     pause();

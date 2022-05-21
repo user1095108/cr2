@@ -38,8 +38,8 @@ int main()
 
           for (std::intmax_t off{};;)
           {
-            if (auto const sz(c.template await<uv_fs_read>(&fs, uvf, &buf, 1,
-              off)); sz > 0)
+            if (auto const sz(c.template await<uv_fs_read>(&uvfs, uvf, &buf,
+              1, off)); sz > 0)
             {
               off += sz;
               r.append(data, sz);
@@ -50,7 +50,7 @@ int main()
             }
           }
 
-          c.template await<uv_fs_close>(&fs, uvf);
+          c.template await<uv_fs_close>(&uvfs, uvf);
 
           return r;
         }
