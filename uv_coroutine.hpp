@@ -199,7 +199,7 @@ public:
     int r;
 
     gnr::forwarder<void(int) noexcept> g(
-      [&](int const s) noexcept
+      [&](auto const s) noexcept
       {
         r = s;
         state_ = SUSPENDED;
@@ -208,10 +208,14 @@ public:
 
     uvc->data = &g;
 
-    G(uvc,
-      std::forward<decltype(a)>(a)...,
-      detail::uv::uv_connect_cb
-    );
+    if (auto const r(G(uvc,
+        std::forward<decltype(a)>(a)...,
+        detail::uv::uv_connect_cb
+      )
+    ); r < 0)
+    {
+      return r;
+    }
 
     pause();
 
@@ -272,7 +276,7 @@ public:
     uv_buf_t const* b;
 
     gnr::forwarder<void(ssize_t, uv_buf_t const*) noexcept> g(
-      [&](ssize_t const sz, uv_buf_t const* const buf) noexcept
+      [&](auto const sz, auto const buf) noexcept
       {
         s = sz;
         b = buf;

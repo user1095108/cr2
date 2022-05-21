@@ -38,12 +38,12 @@ int main()
           ssize_t sz;
           uv_buf_t const* buf;
 
-          if (auto const s(c.template await<uv_tcp_connect>(
+          if (auto e(c.template await<uv_tcp_connect>(
               &req,
               &client,
               reinterpret_cast<struct sockaddr*>(&addr)
             )
-          ); s >= 0)
+          ); e >= 0)
           {
             for (;;)
             {
