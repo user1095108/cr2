@@ -194,31 +194,6 @@ public:
   }
 
   template <auto G>
-  auto await(uv_fs_t* const fs, auto&& ...a) noexcept
-  {
-    gnr::forwarder<void() noexcept> g(
-      [&]() noexcept
-      {
-        state_ = SUSPENDED;
-      }
-    );
-
-    fs->data = &g;
-
-    G(uv_default_loop(),
-      fs,
-      std::forward<decltype(a)>(a)...,
-      detail::uv::uv_fs_cb
-    );
-
-    pause();
-
-    SCOPE_EXIT(fs, uv_fs_req_cleanup(fs));
-
-    return fs->result;
-  }
-
-  template <auto G>
   auto await(uv_connect_t* const uvc, auto&& ...a) noexcept
   {
     int r;
@@ -241,6 +216,34 @@ public:
     pause();
 
     return r;
+  }
+
+  template <auto G>
+  auto await(uv_fs_t* const fs, auto&& ...a) noexcept
+  {
+    gnr::forwarder<void() noexcept> g(
+      [&]() noexcept
+      {
+        state_ = SUSPENDED;
+      }
+    );
+
+    fs->data = &g;
+
+    if (auto const r(G(uv_default_loop(),
+        fs,
+        std::forward<decltype(a)>(a)...,
+        detail::uv::uv_fs_cb
+      )); r < 0)
+    {
+      return decltype(fs->result)(r);
+    }
+
+    pause();
+
+    SCOPE_EXIT(fs, uv_fs_req_cleanup(fs));
+
+    return fs->result;
   }
 
   template <auto G>
@@ -279,18 +282,22 @@ public:
 
     char data[65536];
 
-    auto t(std::make_pair<void*, char*>(&g, data));
+    auto t(std::pair<void*, char*>(&g, data));
 
     uvs->data = &t;
 
-    G(uvs,
-      detail::uv::uv_alloc_cb,
-      detail::uv::uv_read_cb
-    );
+    if (auto const r(G(uvs,
+        detail::uv::uv_alloc_cb,
+        detail::uv::uv_read_cb
+      )
+    ); r < 0)
+    {
+      return std::pair<ssize_t, uv_buf_t const*>{r, {}};
+    }
 
     pause();
 
-    return std::tuple{s, b};
+    return std::pair{s, b};
   }
 };
 

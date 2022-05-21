@@ -33,12 +33,12 @@ int main()
 
           uv_fs_t fs;
 
-          auto const fh(c.template await<uv_fs_open>(&fs,
+          auto const uvf(c.template await<uv_fs_open>(&fs,
             "uvdemo.cpp", 0, O_RDONLY));
 
           for (std::intmax_t off{};;)
           {
-            if (auto const sz(c.template await<uv_fs_read>(&fs, fh, &buf, 1,
+            if (auto const sz(c.template await<uv_fs_read>(&fs, uvf, &buf, 1,
               off)); sz > 0)
             {
               off += sz;
@@ -50,7 +50,7 @@ int main()
             }
           }
 
-          c.template await<uv_fs_close>(&fs, fh);
+          c.template await<uv_fs_close>(&fs, uvf);
 
           return r;
         }
