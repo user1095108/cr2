@@ -27,39 +27,41 @@ int main()
         {
           std::string r;
 
-          uv_tcp_t client;
-          uv_tcp_init(uv_default_loop(), &client);
-
-          struct sockaddr_in addr;
-          uv_ip4_addr("127.0.0.1", 7777, &addr);
-
-          uv_connect_t req;
-
-          if (auto const e(c.template await<uv_tcp_connect>(
-              &req,
-              &client,
-              reinterpret_cast<struct sockaddr*>(&addr)
-            )
-          ); e >= 0)
           {
-            for (;;)
+            struct sockaddr_in addr;
+            uv_ip4_addr("127.0.0.1", 7777, &addr);
+
+            uv_tcp_t client;
+            uv_tcp_init(uv_default_loop(), &client);
+
+            uv_connect_t req;
+
+            if (auto const e(c.template await<uv_tcp_connect>(
+                &req,
+                &client,
+                reinterpret_cast<struct sockaddr*>(&addr)
+              )
+            ); e >= 0)
             {
-              if (auto const [sz, buf](
-                c.template await<uv_read_start>((uv_stream_t*)&client));
-                sz >= 0)
+              for (;;)
               {
-                r.append(buf->base, sz);
-              }
-              else
-              {
-                break;
+                if (auto const [sz, buf](
+                  c.template await<uv_read_start>((uv_stream_t*)&client));
+                  sz >= 0)
+                {
+                  r.append(buf->base, sz);
+                }
+                else
+                {
+                  break;
+                }
               }
             }
+
+            uv_read_stop((uv_stream_t*)&client);
+
+            c.template await<uv_close>((uv_handle_t*)&client);
           }
-
-          uv_read_stop((uv_stream_t*)&client);
-
-          c.template await<uv_close>((uv_handle_t*)&client);
 
           return r;
         }
