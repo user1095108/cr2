@@ -27,7 +27,7 @@ int main()
         {
           std::string r;
 
-          char data[1024];
+          char data[64_k];
 
           auto const buf(uv_buf_init(data, sizeof(data)));
 

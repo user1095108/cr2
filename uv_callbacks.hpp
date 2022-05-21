@@ -18,9 +18,9 @@ inline void uv_alloc_cb(uv_handle_t* const uvh, std::size_t,
 }
 
 extern "C"
-inline void uv_close_cb(uv_handle_t* const h) noexcept
+inline void uv_close_cb(uv_handle_t* const uvh) noexcept
 {
-  (*static_cast<gnr::forwarder<void()>*>(h->data))();
+  (*static_cast<gnr::forwarder<void()>*>(uvh->data))();
 }
 
 extern "C"
