@@ -293,9 +293,9 @@ public:
 
     char data[65536];
 
-    auto t(std::pair<void*, char*>(&g, data));
+    std::pair<void*, char*> p(&g, data);
 
-    uvs->data = &t;
+    uvs->data = &p;
 
     if (s = G(uvs,
         detail::uv::uv_alloc_cb,
