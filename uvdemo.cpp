@@ -58,5 +58,7 @@ int main()
     ) <<
     std::endl;
 
+  uv_loop_close(uv_default_loop());
+
   return 0;
 }
