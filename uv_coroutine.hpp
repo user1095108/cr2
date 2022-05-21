@@ -383,27 +383,25 @@ auto run(auto&& ...c)
   noexcept(noexcept((c.template retval<>(), ...)))
   requires(sizeof...(c) >= 1)
 {
+  for (bool p, s;;)
   {
-    for (bool p, s;;)
-    {
-      p = s = {};
+    p = s = {};
 
+    (
       (
-        (
-          (c.state() >= NEW ? c() : void()),
-          (s = s || (SUSPENDED == c.state()), p = p || (PAUSED == c.state()))
-        ),
-        ...
-      );
+        (c.state() >= NEW ? c() : void()),
+        (s = s || (SUSPENDED == c.state()), p = p || (PAUSED == c.state()))
+      ),
+      ...
+    );
 
-      if (p || s)
-      {
-        uv_run(uv_default_loop(), s ? UV_RUN_NOWAIT : UV_RUN_ONCE);
-      }
-      else
-      {
-        break;
-      }
+    if (p || s)
+    {
+      uv_run(uv_default_loop(), s ? UV_RUN_NOWAIT : UV_RUN_ONCE);
+    }
+    else
+    {
+      break;
     }
   }
 
