@@ -43,9 +43,7 @@ int main()
               )
             ); e >= 0)
             {
-              char data[65536];
-
-              for (;;)
+              for (char data[65536];;)
               {
                 if (auto const [sz, buf](
                   c.template await<uv_read_start>(
