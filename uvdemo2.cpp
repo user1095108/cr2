@@ -35,10 +35,7 @@ int main()
 
           uv_connect_t req;
 
-          ssize_t sz;
-          uv_buf_t const* buf;
-
-          if (auto e(c.template await<uv_tcp_connect>(
+          if (auto const e(c.template await<uv_tcp_connect>(
               &req,
               &client,
               reinterpret_cast<struct sockaddr*>(&addr)
@@ -47,8 +44,8 @@ int main()
           {
             for (;;)
             {
-              if (std::tie(sz, buf) =
-                c.template await<uv_read_start>((uv_stream_t*)&client);
+              if (auto const [sz, buf](
+                c.template await<uv_read_start>((uv_stream_t*)&client));
                 sz >= 0)
               {
                 r.append(buf->base, sz);
