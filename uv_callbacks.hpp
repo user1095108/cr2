@@ -8,6 +8,8 @@ namespace cr2::detail::uv
 {
 
 extern "C"
+{
+
 inline void uv_alloc_cb(uv_handle_t* const uvh, std::size_t,
   uv_buf_t* const buf) noexcept
 {
@@ -17,19 +19,16 @@ inline void uv_alloc_cb(uv_handle_t* const uvh, std::size_t,
   buf->len = 65536;
 }
 
-extern "C"
 inline void uv_close_cb(uv_handle_t* const uvh) noexcept
 {
   (*static_cast<gnr::forwarder<void()>*>(uvh->data))();
 }
 
-extern "C"
 inline void uv_fs_cb(uv_fs_t* const uvfs) noexcept
 {
   (*static_cast<gnr::forwarder<void()>*>(uvfs->data))();
 }
 
-extern "C"
 inline void uv_read_cb(uv_stream_t* const uvs,
   ssize_t const sz, uv_buf_t const* const buf) noexcept
 {
@@ -39,10 +38,11 @@ inline void uv_read_cb(uv_stream_t* const uvs,
     std::get<0>(*p)))(sz, buf);
 }
 
-extern "C"
 inline void uv_connect_cb(uv_connect_t* const uvc, int const status) noexcept
 {
   (*static_cast<gnr::forwarder<void(int)>*>(uvc->data))(status);
+}
+
 }
 
 }
