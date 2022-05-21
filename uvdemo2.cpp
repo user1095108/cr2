@@ -48,8 +48,11 @@ int main()
               for (;;)
               {
                 if (auto const [sz, buf](
-                  c.template await<uv_read_start>((uv_stream_t*)&client,
-                  data)); sz >= 0)
+                  c.template await<uv_read_start>(
+                    (uv_stream_t*)&client,
+                    data
+                  )
+                ); sz >= 0)
                 {
                   r.append(buf->base, sz);
                 }
