@@ -31,11 +31,14 @@ int main()
 
           auto const buf(uv_buf_init(data, sizeof(data)));
 
-          auto const fh(c.template await_fs<uv_fs_open>("uvdemo.cpp", 0, O_RDONLY));
+          uv_fs_t fs;
 
-          for (std::int64_t off{};;)
+          auto const fh(c.await(uv_fs_open, &fs, "uvdemo.cpp", 0, O_RDONLY));
+
+          for (std::intmax_t off{};;)
           {
-            if (auto const sz(c.template await_fs<uv_fs_read>(fh, &buf, 1, off)); sz > 0)
+            if (auto const sz(c.await(uv_fs_read, &fs, fh, &buf, 1,
+              off)); sz > 0)
             {
               off += sz;
               r.append(data, sz);
@@ -46,14 +49,13 @@ int main()
             }
           }
 
-          c.template await_fs<uv_fs_close>(fh);
+          c.await(uv_fs_close, &fs, fh);
 
           return r;
         }
       )
     ) <<
     std::endl;
-
 
   return 0;
 }
