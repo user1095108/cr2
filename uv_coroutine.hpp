@@ -276,7 +276,7 @@ public:
   }
 
   template <auto G>
-  auto await(uv_stream_t* const uvs) noexcept
+  auto await(uv_stream_t* const uvs, char* const data) noexcept
     requires(G == uv_read_start)
   {
     ssize_t s;
@@ -291,7 +291,7 @@ public:
       }
     );
 
-    std::pair<void*, char*> p(&g, static_cast<char*>(uvs->data));
+    std::pair<void*, char*> p(&g, data);
 
     uvs->data = &p;
 
