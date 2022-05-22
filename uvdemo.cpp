@@ -1,6 +1,8 @@
 #include <iostream>
 
-#include "uv_coroutine.hpp"
+#include "basic_coroutine.hpp"
+//#include "portable_coroutine.hpp"
+#include "libuv_support.hpp"
 
 using namespace cr2::literals;
 
@@ -8,7 +10,7 @@ int main()
 {
   std::cout <<
     std::get<1>(
-      cr2::uv::make_and_run<128_k, 128_k>(
+      cr2::make_and_run<128_k, 128_k>(
         [&](auto& c)
         {
           std::intmax_t j(5);
@@ -34,13 +36,13 @@ int main()
 
             uv_fs_t uvfs;
 
-            auto const uvf(c.template await<uv_fs_open>(&uvfs,
+            auto const uvf(cr2::await<uv_fs_open>(c, &uvfs,
               "uvdemo.cpp", 0, O_RDONLY));
 
             for (std::uintmax_t off{};;)
             {
-              if (auto const sz(c.template await<uv_fs_read>(&uvfs, uvf, &buf,
-                1, off)); sz > 0)
+              if (auto const sz(cr2::await<uv_fs_read>(c, &uvfs, uvf,
+                &buf, 1, off)); sz > 0)
               {
                 off += sz;
                 r.append(data, sz);
@@ -51,7 +53,7 @@ int main()
               }
             }
 
-            c.template await<uv_fs_close>(&uvfs, uvf);
+            cr2::await<uv_fs_close>(c, &uvfs, uvf);
           }
 
           return r;

@@ -16,10 +16,10 @@ namespace cr2
 {
 
 template <typename F, typename R, std::size_t S>
-class portable_coroutine
+class coroutine
 {
   template <typename, typename, std::size_t>
-  friend class portable_coroutine;
+  friend class coroutine;
 
 private:
   boost::context::fiber fi_;
@@ -67,7 +67,7 @@ private:
   }
 
 public:
-  explicit portable_coroutine(F&& f)
+  explicit coroutine(F&& f)
     noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
     state_{NEW},
     f_(std::move(f))
@@ -75,7 +75,7 @@ public:
     reset();
   }
 
-  ~portable_coroutine()
+  ~coroutine()
     noexcept(
       std::is_pointer_v<R> ||
       std::is_reference_v<R> ||
@@ -93,8 +93,8 @@ public:
     }
   }
 
-  portable_coroutine(portable_coroutine const&) = delete;
-  portable_coroutine(portable_coroutine&&) = default;
+  coroutine(coroutine const&) = delete;
+  coroutine(coroutine&&) = default;
 
   explicit operator bool() const noexcept { return bool(state_); }
 
@@ -140,6 +140,9 @@ public:
   auto state() const noexcept { return state_; }
 
   //
+  void pause() { suspend<PAUSED>(); }
+  void unpause() noexcept { state_ = SUSPENDED; }
+
   void reset()
   {
     if constexpr(
@@ -187,137 +190,11 @@ public:
   void suspend() { return suspend<SUSPENDED>(); }
 
   template <typename A, typename B, std::size_t C>
-  void suspend_to(portable_coroutine<A, B, C>& c)
-  { // suspend means "out"
+  void suspend_to(coroutine<A, B, C>& c)
+  {
     c(); suspend();
   }
 };
-
-namespace portable
-{
-
-template <std::size_t S = default_stack_size>
-auto make_plain(auto&& f)
-  noexcept(noexcept(
-      portable_coroutine<
-        std::remove_cvref_t<decltype(f)>,
-        detail::transform_void_t<
-          decltype(
-            std::declval<std::remove_cvref_t<decltype(f)>>()(
-              std::declval<
-                portable_coroutine<
-                  std::remove_cvref_t<decltype(f)>,
-                  detail::empty_t,
-                  S
-                >&
-              >()
-            )
-          )
-        >,
-        S
-      >(std::forward<decltype(f)>(f))
-    )
-  )
-{
-  using F = std::remove_cvref_t<decltype(f)>;
-  using R = detail::transform_void_t<
-    decltype(std::declval<F>()(
-        std::declval<portable_coroutine<F, detail::empty_t, S>&>()
-      )
-    )
-  >;
-  using C = portable_coroutine<F, R, S>;
-
-  return C(std::forward<decltype(f)>(f));
-}
-
-template <std::size_t S = default_stack_size>
-auto make_shared(auto&& f)
-{
-  using F = std::remove_cvref_t<decltype(f)>;
-  using R = detail::transform_void_t<
-    decltype(std::declval<F>()(
-        std::declval<portable_coroutine<F, detail::empty_t, S>&>()
-      )
-    )
-  >;
-  using C = portable_coroutine<F, R, S>;
-
-  return std::make_shared<C>(std::forward<decltype(f)>(f));
-}
-
-template <std::size_t S = default_stack_size>
-auto make_unique(auto&& f)
-{
-  using F = std::remove_cvref_t<decltype(f)>;
-  using R = detail::transform_void_t<
-    decltype(std::declval<F>()(
-        std::declval<portable_coroutine<F, detail::empty_t, S>&>()
-      )
-    )
-  >;
-  using C = portable_coroutine<F, R, S>;
-
-  return std::make_unique<C>(std::forward<decltype(f)>(f));
-}
-
-auto run(auto&& ...c)
-  noexcept(noexcept((c.template retval<>(), ...)))
-  requires(sizeof...(c) >= 1)
-{
-  {
-    bool s;
-
-    do
-    {
-      s = {};
-
-      (
-        (
-          (c.state() >= NEW ? c() : void()),
-          (s = s || (SUSPENDED == c.state()))
-        ),
-        ...
-      );
-    } while (s);
-  }
-
-  auto const l(
-    [&]() noexcept(noexcept((c.reset(), ...)))
-    {
-      (c.reset(), ...);
-    }
-  );
-
-  SCOPE_EXIT(&, l());
-
-  if constexpr(sizeof...(c) > 1)
-  {
-    return std::tuple<decltype(c.template retval<true>())...>{
-      c.template retval<true>()...
-    };
-  }
-  else
-  {
-    return (c, ...).template retval<>();
-  }
-}
-
-auto make_and_run(auto&& ...c)
-  noexcept(noexcept(run(make_plain(std::forward<decltype(c)>(c))...)))
-{
-  return run(make_plain(std::forward<decltype(c)>(c))...);
-}
-
-template <std::size_t ...S>
-auto make_and_run(auto&& ...c)
-  noexcept(noexcept(run(make_plain(std::forward<decltype(c)>(c))...)))
-  requires(sizeof...(S) == sizeof...(c))
-{
-  return run(make_plain<S>(std::forward<decltype(c)>(c))...);
-}
-
-}
 
 }
 

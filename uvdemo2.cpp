@@ -1,6 +1,8 @@
 #include <iostream>
 
-#include "uv_coroutine.hpp"
+#include "basic_coroutine.hpp"
+//#include "portable_coroutine.hpp"
+#include "libuv_support.hpp"
 
 using namespace cr2::literals;
 
@@ -8,7 +10,7 @@ int main()
 {
   std::cout <<
     std::get<1>(
-      cr2::uv::make_and_run<128_k, 128_k>(
+      cr2::make_and_run<128_k, 128_k>(
         [&](auto& c)
         {
           std::intmax_t j(5);
@@ -36,7 +38,8 @@ int main()
 
             uv_connect_t req;
 
-            if (auto const e(c.template await<uv_tcp_connect>(
+            if (auto const e(cr2::await<uv_tcp_connect>(
+                c,
                 &req,
                 &client,
                 reinterpret_cast<struct sockaddr*>(&addr)
@@ -46,7 +49,8 @@ int main()
               for (char data[64_k];;)
               {
                 if (auto const [sz, buf](
-                  c.template await<uv_read_start>(
+                  cr2::await<uv_read_start>(
+                    c,
                     (uv_stream_t*)&client,
                     data
                   )
@@ -63,7 +67,7 @@ int main()
 
             uv_read_stop((uv_stream_t*)&client);
 
-            c.template await<uv_close>((uv_handle_t*)&client);
+            cr2::await<uv_close>(c, (uv_handle_t*)&client);
           }
 
           return r;

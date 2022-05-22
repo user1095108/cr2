@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "basic_coroutine.hpp"
+//#include "portable_coroutine.hpp"
+#include "libnone_support.hpp"
 
 using namespace cr2::literals;
 
@@ -14,7 +16,7 @@ struct A
 
 int main()
 {
-  auto c0(cr2::basic::make_plain<128_k>(
+  auto c0(cr2::make_plain<128_k>(
       [](auto& c)
       {
         for (;;)
@@ -28,7 +30,7 @@ int main()
 
   std::cout <<
     std::get<1>(
-      cr2::basic::make_and_run<128_k, 128_k>(
+      cr2::make_and_run<128_k, 128_k>(
         [&](auto& c)
         {
           A a;
