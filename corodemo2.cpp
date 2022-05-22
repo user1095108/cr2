@@ -1,14 +1,14 @@
 #include <iostream>
 
-#include "basic_coroutine.hpp"
-//#include "portable_coroutine.hpp"
-#include "libnone_support.hpp"
+//#include "basic_coroutine.hpp"
+#include "portable_coroutine.hpp"
+#include "libevent_support.hpp"
 
 using namespace cr2::literals;
 
 int main()
 {
-  auto c0(cr2::event::make_plain(
+  auto c0(cr2::make_plain(
       [](auto& c)
       {
         for (;;)
@@ -22,7 +22,7 @@ int main()
 
   std::cout <<
     std::get<0>(
-      cr2::event::make_and_run<128_k, 128_k>(
+      cr2::make_and_run<128_k, 128_k>(
         [&](auto& c)
         {
           std::intmax_t j(5);
@@ -39,7 +39,7 @@ int main()
         },
         [](auto& c)
         {
-          c.await(EV_READ, STDIN_FILENO);
+          cr2::await(c, EV_READ, STDIN_FILENO);
           std::cout << "coro2\n";
         }
       )

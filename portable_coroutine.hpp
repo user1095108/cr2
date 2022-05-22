@@ -50,7 +50,7 @@ private:
       !std::is_same_v<detail::empty_t, R>
     );
 
-    if (NEW != state_)
+    if (DEAD == state_)
     {
       std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
     }
@@ -96,7 +96,7 @@ public:
 
   explicit operator bool() const noexcept { return bool(state_); }
 
-  void operator()()
+  void operator()() noexcept
   {
     state_ = RUNNING;
 
