@@ -1,9 +1,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "generic/scopeexit.hpp"
-
-#include "event_coroutine.hpp"
+#include "basic_coroutine.hpp"
+//#include "portable_coroutine.hpp"
+#include "libevent_support.hpp"
 
 using namespace cr2::literals;
 using namespace std::literals::string_literals;
@@ -11,7 +11,7 @@ using namespace std::literals::string_literals;
 int main()
 {
   auto const t(
-    cr2::event::make_and_run<128_k, 512_k>(
+    cr2::make_and_run<128_k, 512_k>(
       [](auto& c)
       {
         std::intmax_t j(10);
@@ -70,7 +70,7 @@ int main()
             if ((EAGAIN == errno) || (EWOULDBLOCK == errno))
             {
               std::cout << "pausing\n";
-              c.await(EV_CLOSED|EV_READ, sck);
+              cr2::await(c, EV_CLOSED|EV_READ, sck);
 
               continue;
             }

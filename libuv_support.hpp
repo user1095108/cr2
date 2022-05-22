@@ -4,8 +4,6 @@
 
 #include <uv.h>
 
-#include "generic/forwarder.hpp"
-
 #include "common2.hpp"
 
 namespace cr2

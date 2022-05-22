@@ -1,7 +1,9 @@
 #include <iostream>
 #include <thread>
 
-#include "event_coroutine.hpp"
+#include "basic_coroutine.hpp"
+//#include "portable_coroutine.hpp"
+#include "libevent_support.hpp"
 
 using namespace cr2::literals;
 using namespace std::literals::chrono_literals;
@@ -12,7 +14,7 @@ int main()
 
   std::cout <<
     std::get<2>(
-      cr2::event::make_and_run<128_k, 128_k, 128_k>(
+      cr2::make_and_run<128_k, 128_k, 128_k>(
         [](auto& c)
         {
           unsigned i(1);
@@ -20,7 +22,7 @@ int main()
           do
           {
             std::cout << "coro0 " << i++ << '\n';
-            c.await(1s);
+            cr2::await(c, 1s);
           }
           while (10 != i);
         },
@@ -31,7 +33,7 @@ int main()
           do
           {
             std::cout << "coro1 " << i-- << '\n';
-            c.await(1s);
+            cr2::await(c, 1s);
           }
           while (i);
         },
@@ -51,7 +53,7 @@ int main()
     ) <<
     std::endl;
 
-  cr2::event::make_and_run<128_k>(
+  cr2::make_and_run<128_k>(
     [&](auto& c)
     {
       struct myevent : event
@@ -67,7 +69,7 @@ int main()
         }
       ).detach();
 
-      c.await(&e);
+      cr2::await(c, &e);
 
       std::cout << e.x << ' ' << e.y << '\n';
 
@@ -75,7 +77,8 @@ int main()
       {
         std::cout << "waiting for keypress\n";
       }
-      while (!(EV_READ & std::get<0>(c.await(1s, EV_READ, STDIN_FILENO))));
+      while (!(EV_READ &
+        std::get<0>(cr2::await(c, 1s, EV_READ, STDIN_FILENO))));
     }
   );
 

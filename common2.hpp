@@ -2,6 +2,11 @@
 # define CR2_COMMON2_HPP
 # pragma once
 
+#include <algorithm>
+
+#include "generic/forwarder.hpp"
+#include "generic/scopeexit.hpp"
+
 namespace cr2
 {
 

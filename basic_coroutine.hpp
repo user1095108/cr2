@@ -7,7 +7,6 @@
 #include <tuple>
 
 #include "generic/savestate.hpp"
-#include "generic/scopeexit.hpp"
 
 #include "common.hpp"
 

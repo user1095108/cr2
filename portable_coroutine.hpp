@@ -8,8 +8,6 @@
 
 #include "boost/context/fiber.hpp"
 
-#include "generic/scopeexit.hpp"
-
 #include "common.hpp"
 
 namespace cr2
