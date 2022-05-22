@@ -3,8 +3,6 @@
 # pragma once
 
 #include <cstddef> // std::size_t
-#include <memory> // std::unique_ptr, std::shared_ptr
-#include <tuple>
 
 #include "boost/context/fiber.hpp"
 

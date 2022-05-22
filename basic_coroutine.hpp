@@ -2,10 +2,6 @@
 # define CR2_BASIC_COROUTINE_HPP
 # pragma once
 
-#include <cstddef> // std::size_t
-#include <memory> // std::unique_ptr, std::shared_ptr
-#include <tuple>
-
 #include "generic/savestate.hpp"
 
 #include "common.hpp"

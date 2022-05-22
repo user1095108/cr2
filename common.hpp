@@ -2,6 +2,8 @@
 # define CR2_COMMON_HPP
 # pragma once
 
+#include <cstddef> // std::size_t
+
 namespace cr2
 {
 
