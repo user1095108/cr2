@@ -29,29 +29,17 @@ private:
   std::unique_ptr<char[]> store_;
 
 public:
-  control(auto&& l):
-    store_(
-      ::new char[sizeof(decltype(make_plain(std::forward<decltype(l)>(l))))]
-    )
+  control(auto&& c):
+    store_(::new char[sizeof(c)])
   {
-    using C = decltype(make_plain(std::forward<decltype(l)>(l)));
+    using C = std::remove_reference_t<decltype(c)>;
 
-    id_ = ::new (store_.get()) C(
-        make_plain(std::forward<decltype(l)>(l))
-      );
+    invoke_ = [](void* const p) noexcept {(*static_cast<C*>(p))();};
+    state_ = [](void* const p) noexcept {return static_cast<C*>(p)->state();};
+    reset_ = [](void* const p) {static_cast<C*>(p)->reset();};
+    destroy_ = [](void* const p) {static_cast<C*>(p)->~C();};
 
-    invoke_ = [](void* const p) noexcept
-      {
-        (*static_cast<C*>(p))();
-      };
-
-    state_ = [](void* const p) noexcept
-      {
-        return static_cast<C*>(p)->state();
-      };
-
-    reset_ = [](void* const p) { static_cast<C*>(p)->reset(); };
-    destroy_ = [](void* const p) { static_cast<C*>(p)->~C(); };
+    id_ = ::new (store_.get()) C(std::forward<decltype(c)>(c));
   }
 
   control(control&&) = default;
