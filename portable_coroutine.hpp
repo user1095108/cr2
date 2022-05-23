@@ -139,7 +139,7 @@ public:
   void pause() { suspend<PAUSED>(); }
   void unpause() noexcept { state_ = SUSPENDED; }
 
-  void reset()
+  void reset() noexcept(noexcept(destroy()))
   {
     if constexpr(
       !std::is_pointer_v<R> &&

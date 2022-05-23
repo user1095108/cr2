@@ -81,12 +81,7 @@ template <auto G>
 auto await(auto& c, uv_fs_t* const uvfs, auto&& ...a)
   noexcept(noexcept(c.pause()))
 {
-  gnr::forwarder<void() noexcept> g(
-    [&]() noexcept
-    {
-      c.unpause();
-    }
-  );
+  gnr::forwarder<void() noexcept> g([&]() noexcept { c.unpause(); });
 
   uvfs->data = &g;
 
@@ -112,12 +107,7 @@ auto await(auto& c, uv_handle_t* const uvh)
   noexcept(noexcept(c.pause()))
   requires(G == uv_close)
 {
-  gnr::forwarder<void() noexcept> g(
-    [&]() noexcept
-    {
-      c.unpause();
-    }
-  );
+  gnr::forwarder<void() noexcept> g([&]() noexcept { c.unpause(); });
 
   uvh->data = &g;
 
