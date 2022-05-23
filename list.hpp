@@ -2,7 +2,6 @@
 # define CR2_LIST_HPP
 # pragma once
 
-#include <algorithm>
 #include <memory>
 
 #include "xl/list.hpp"
