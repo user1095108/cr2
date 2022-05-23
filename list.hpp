@@ -35,10 +35,10 @@ public:
     using C = std::remove_reference_t<decltype(c)>;
     id_ = ::new (store_.get()) C(std::move(c));
 
-    invoke_ = [](void* const p) noexcept {(*std::launder(reinterpret_cast<C*>(p)))();};
-    state_ = [](void* const p) noexcept {return std::launder(reinterpret_cast<C*>(p))->state();};
-    reset_ = [](void* const p) {std::launder(reinterpret_cast<C*>(p))->reset();};
-    destroy_ = [](void* const p) {std::launder(reinterpret_cast<C*>(p))->~C();};
+    invoke_ = [](void* const p) noexcept {(*static_cast<C*>(p))();};
+    state_ = [](void* const p) noexcept {return static_cast<C*>(p)->state();};
+    reset_ = [](void* const p) {static_cast<C*>(p)->reset();};
+    destroy_ = [](void* const p) {static_cast<C*>(p)->~C();};
   }
 
   control(control const&) = delete;
