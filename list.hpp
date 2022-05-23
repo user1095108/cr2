@@ -88,7 +88,7 @@ public:
     );
   }
 
-  void operator()() noexcept
+  void operator()() const noexcept
   {
     std::for_each(
       begin(),
