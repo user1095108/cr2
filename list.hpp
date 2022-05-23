@@ -22,7 +22,7 @@ private:
   void* id_;
 
   enum state (*state_)(void*) noexcept;
-  void (*invoke_)(void*) noexcept;
+  void (*invoke_)(void*);
   void (*reset_)(void*);
   void (*destroy_)(void*);
 
@@ -36,7 +36,7 @@ public:
     id_ = ::new (store_.get()) C(std::move(c));
 
     state_ = [](void* const p) noexcept {return static_cast<C*>(p)->state();};
-    invoke_ = [](void* const p) noexcept { (*static_cast<C*>(p))(); };
+    invoke_ = [](void* const p) { (*static_cast<C*>(p))(); };
     reset_ = [](void* const p) { static_cast<C*>(p)->reset(); };
     destroy_ = [](void* const p) { static_cast<C*>(p)->~C(); };
   }
@@ -44,7 +44,13 @@ public:
   control(control const&) = delete;
   control(control&& o) = default;
 
-  ~control() { destroy_(id_); }
+  ~control()
+  {
+    if (store_)
+    {
+      destroy_(id_);
+    }
+  }
 
   //
   control& operator=(control const&) = delete;
