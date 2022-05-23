@@ -93,13 +93,7 @@ public:
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) noexcept
-      {
-        if (e.state())
-        {
-          e.invoke_(e.id_);
-        }
-      }
+      [](auto&& e) noexcept { if (e.state()) { e.invoke_(e.id_); } }
     );
   }
 
