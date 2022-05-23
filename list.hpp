@@ -60,8 +60,6 @@ namespace detail
 
 class list: public xl::list<detail::control>
 {
-  using inherited_t = xl::list<detail::control>;
-
 public:
   list(auto&& ...f)
     noexcept(noexcept(
@@ -84,7 +82,7 @@ public:
     return std::all_of(
       begin(),
       end(),
-      [&](auto&& e) noexcept { return e.state(e.id); }
+      [](auto&& e) noexcept { return e.state(e.id); }
     );
   }
 
@@ -94,6 +92,16 @@ public:
       begin(),
       end(),
       [](auto&& e) noexcept { e.invoke(e.id); }
+    );
+  }
+
+  //
+  bool any(enum state const s) noexcept
+  {
+    return std::any_of(
+      begin(),
+      end(),
+      [s](auto&& e) noexcept { return s == e.state(e.id); }
     );
   }
 
