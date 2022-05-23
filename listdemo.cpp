@@ -15,7 +15,7 @@ int main()
     {
       for (;;)
       {
-        std::cout << '1' << std::endl;
+        std::cout << 'a' << std::endl;
         c.suspend();
       }
     },
@@ -23,7 +23,7 @@ int main()
     {
       for (;;)
       {
-        std::cout << '2' << std::endl;
+        std::cout << 'b' << std::endl;
         c.suspend();
       }
     },
@@ -31,7 +31,7 @@ int main()
     {
       for (;;)
       {
-        std::cout << '3' << std::endl;
+        std::cout << 'c' << std::endl;
         c.suspend();
       }
     }

@@ -17,9 +17,11 @@ namespace detail
 
 struct control
 {
-  gnr::forwarder<void() noexcept> invoke;
-  gnr::forwarder<void()> reset;
-  gnr::forwarder<enum state() noexcept> state;
+  void* id;
+
+  void (*invoke)(void*) noexcept;
+  void (*reset)(void*);
+  enum state (*state)(void*) noexcept;
 
   std::any store;
 };
@@ -36,9 +38,22 @@ inline void set_control(control& ctrl, auto&& l)
     >(ctrl.store)
   );
 
-  ctrl.invoke = [&c]() noexcept { c(); };
-  ctrl.reset = [&c]() { c.reset(); };
-  ctrl.state = [&c]() noexcept { return c.state(); };
+  ctrl.id = &c;
+
+  ctrl.invoke = [](void* const p) noexcept
+    {
+      (*static_cast<decltype(&c)>(p))();
+    };
+
+  ctrl.reset = [](void* const p)
+    {
+      static_cast<decltype(&c)>(p)->reset();
+    };
+
+  ctrl.state = [](void* const p) noexcept
+    {
+      return static_cast<decltype(&c)>(p)->state();
+    };
 }
 
 }
@@ -84,7 +99,7 @@ public:
     return std::all_of(
       begin(),
       end(),
-      [&](auto&& e) noexcept { return e.state(); }
+      [&](auto&& e) noexcept { return e.state(e.id); }
     );
   }
 
@@ -93,7 +108,7 @@ public:
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) noexcept { e.invoke(); }
+      [](auto&& e) noexcept { e.invoke(e.id); }
     );
   }
 
@@ -178,7 +193,7 @@ public:
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) { e.reset(); }
+      [](auto&& e) { e.reset(e.id); }
     );
   }
 };
