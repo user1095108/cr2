@@ -1,3 +1,6 @@
 [submodule "generic"]
 	path = generic
 	url = https://github.com/user1095108/generic.git
+[submodule "xl"]
+	path = xl
+	url = https://github.com/user1095108/xl.git

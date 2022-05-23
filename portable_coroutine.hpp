@@ -63,8 +63,7 @@ private:
   }
 
 public:
-  explicit coroutine(F&& f)
-    noexcept(noexcept(std::is_nothrow_move_constructible_v<F>)):
+  explicit coroutine(F&& f):
     state_{NEW},
     f_(std::move(f))
   {
@@ -139,7 +138,7 @@ public:
   void pause() { suspend<PAUSED>(); }
   void unpause() noexcept { state_ = SUSPENDED; }
 
-  void reset() noexcept(noexcept(destroy()))
+  void reset()
   {
     if constexpr(
       !std::is_pointer_v<R> &&
