@@ -120,8 +120,17 @@ public:
   coroutine(coroutine&& o)
     noexcept(noexcept(f_ = std::move(o.f_)))
   {
-    state_ = o.state_;
+    if constexpr(
+      !std::is_pointer_v<R> &&
+      !std::is_reference_v<R> &&
+      !std::is_same_v<detail::empty_t, R>
+    )
+    {
+      o.destroy();
+    }
+
     f_ = std::move(o.f_);
+    state_ = NEW;
   }
 
   //
