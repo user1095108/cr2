@@ -41,7 +41,7 @@ int main()
 
       for (auto i(j - 1); 1 != i; --i)
       {
-        std::cout << "coro2\n";
+        std::cout << "coro\n";
 
         j *= i;
         c.suspend();
