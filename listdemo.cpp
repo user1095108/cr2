@@ -71,7 +71,7 @@ int main()
     std::all_of(
       l.begin(),
       l.end(),
-      [](auto&& e)noexcept{return e.state();}
+      [](auto&& e) noexcept { return e.state(); }
     )
   )
   {
