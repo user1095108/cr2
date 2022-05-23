@@ -165,6 +165,8 @@ public:
   }
 
   //
+  void const* id() const noexcept { return this; }
+
   template <bool Tuple = false>
   decltype(auto) retval()
     noexcept(

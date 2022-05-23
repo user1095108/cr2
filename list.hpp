@@ -9,52 +9,65 @@
 namespace cr2
 {
 
+class list;
+
 namespace detail
 {
 
-struct control
+class control
 {
-  void* id;
+  friend class ::cr2::list;
 
-  void (*invoke)(void*) noexcept;
-  enum state (*state)(void*) noexcept;
-  void (*reset)(void*);
-  void (*destroy)(void*);
+private:
+  void* id_;
 
-  std::unique_ptr<char[]> store;
+  void (*invoke_)(void*) noexcept;
+  enum state (*state_)(void*) noexcept;
+  void (*reset_)(void*);
+  void (*destroy_)(void*);
 
+  std::unique_ptr<char[]> store_;
+
+public:
   control(auto&& l):
-    store(
+    store_(
       ::new char[sizeof(decltype(make_plain(std::forward<decltype(l)>(l))))]
     )
   {
     using C = decltype(make_plain(std::forward<decltype(l)>(l)));
 
-    id = ::new (store.get()) C(
+    id_ = ::new (store_.get()) C(
         make_plain(std::forward<decltype(l)>(l))
       );
 
-    invoke = [](void* const p) noexcept
+    invoke_ = [](void* const p) noexcept
       {
         (*static_cast<C*>(p))();
       };
 
-    state = [](void* const p) noexcept
+    state_ = [](void* const p) noexcept
       {
         return static_cast<C*>(p)->state();
       };
 
-    reset = [](void* const p) { static_cast<C*>(p)->reset(); };
-    destroy = [](void* const p) { static_cast<C*>(p)->~C(); };
+    reset_ = [](void* const p) { static_cast<C*>(p)->reset(); };
+    destroy_ = [](void* const p) { static_cast<C*>(p)->~C(); };
   }
 
   control(control&&) = default;
 
-  ~control() { destroy(id); }
+  ~control() { destroy_(id_); }
 
   //
   control& operator=(control const&) = delete;
   control& operator=(control&&) = delete;
+
+  //
+  void const* id() const noexcept { return id_; }
+
+  enum state state() const noexcept { return state_(id_); }
+
+  void reset() const { reset_(id_); }
 };
 
 }
@@ -83,7 +96,7 @@ public:
     return std::all_of(
       begin(),
       end(),
-      [](auto&& e) noexcept { return e.state(e.id); }
+      [](auto&& e) noexcept { return e.state(); }
     );
   }
 
@@ -92,35 +105,7 @@ public:
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) noexcept { e.invoke(e.id); }
-    );
-  }
-
-  //
-  bool all(enum state const s) const noexcept
-  {
-    return std::all_of(
-      begin(),
-      end(),
-      [s](auto&& e) noexcept { return s == e.state(e.id); }
-    );
-  }
-
-  bool any(enum state const s) const noexcept
-  {
-    return std::any_of(
-      begin(),
-      end(),
-      [s](auto&& e) noexcept { return s == e.state(e.id); }
-    );
-  }
-
-  bool none(enum state const s) const noexcept
-  {
-    return std::none_of(
-      begin(),
-      end(),
-      [s](auto&& e) noexcept { return s == e.state(e.id); }
+      [](auto&& e) noexcept { e.invoke_(e.id_); }
     );
   }
 
@@ -145,12 +130,12 @@ public:
   }
 
   //
-  void reset()
+  void reset() const
   {
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) { e.reset(e.id); }
+      [](auto&& e) { e.reset(); }
     );
   }
 };
