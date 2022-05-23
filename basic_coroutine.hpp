@@ -41,6 +41,12 @@ private:
   void destroy()
     noexcept(std::is_nothrow_destructible_v<R>)
   {
+    static_assert(
+      !std::is_pointer_v<R> &&
+      !std::is_reference_v<R> &&
+      !std::is_same_v<detail::empty_t, R>
+    );
+
     if (DEAD == state())
     {
       std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
@@ -110,7 +116,13 @@ public:
   }
 
   coroutine(coroutine const&) = delete;
-  coroutine(coroutine&&) = default;
+
+  coroutine(coroutine&& o)
+    noexcept(noexcept(f_ = std::move(o.f_)))
+  {
+    state_ = o.state_;
+    f_ = std::move(o.f_);
+  }
 
   explicit operator bool() const noexcept { return state_; }
 

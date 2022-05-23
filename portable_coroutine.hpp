@@ -88,6 +88,7 @@ public:
   }
 
   coroutine(coroutine const&) = delete;
+
   coroutine(coroutine&& o)
     noexcept(noexcept(f_ = std::move(o.f_)))
   {
