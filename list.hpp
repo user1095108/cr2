@@ -98,9 +98,27 @@ public:
   }
 
   //
-  bool any(enum state const s) noexcept
+  bool all(enum state const s) const noexcept
+  {
+    return std::all_of(
+      begin(),
+      end(),
+      [s](auto&& e) noexcept { return s == e.state(e.id); }
+    );
+  }
+
+  bool any(enum state const s) const noexcept
   {
     return std::any_of(
+      begin(),
+      end(),
+      [s](auto&& e) noexcept { return s == e.state(e.id); }
+    );
+  }
+
+  bool none(enum state const s) const noexcept
+  {
+    return std::none_of(
       begin(),
       end(),
       [s](auto&& e) noexcept { return s == e.state(e.id); }
