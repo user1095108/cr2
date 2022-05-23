@@ -26,6 +26,11 @@ inline void uv_close_cb(uv_handle_t* const uvh) noexcept
   (*static_cast<gnr::forwarder<void()>*>(uvh->data))();
 }
 
+inline void uv_connect_cb(uv_connect_t* const uvc, int const status) noexcept
+{
+  (*static_cast<gnr::forwarder<void(int)>*>(uvc->data))(status);
+}
+
 inline void uv_fs_cb(uv_fs_t* const uvfs) noexcept
 {
   (*static_cast<gnr::forwarder<void()>*>(uvfs->data))();
@@ -38,11 +43,6 @@ inline void uv_read_cb(uv_stream_t* const uvs,
 
   (*static_cast<gnr::forwarder<void(ssize_t, uv_buf_t const*)>*>(
     std::get<0>(*p)))(sz, buf);
-}
-
-inline void uv_connect_cb(uv_connect_t* const uvc, int const status) noexcept
-{
-  (*static_cast<gnr::forwarder<void(int)>*>(uvc->data))(status);
 }
 
 }
