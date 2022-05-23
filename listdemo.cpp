@@ -2,8 +2,8 @@
 
 #include <ranges>
 
-#include "basic_coroutine.hpp"
-//#include "portable_coroutine.hpp"
+//#include "basic_coroutine.hpp"
+#include "portable_coroutine.hpp"
 #include "libnone_support.hpp"
 
 #include "list.hpp"
@@ -32,21 +32,8 @@ int main()
           c.suspend();
         }
       }
-    )
+    ),
   };
-
-  l.emplace_front(
-    cr2::make_plain<128_k>(
-      [](auto& c)
-      {
-        for (;;)
-        {
-          std::cout << 'a' << std::endl;
-          c.suspend();
-        }
-      }
-    )
-  );
 
   l.push_back(
     cr2::make_plain<128_k>(
@@ -67,9 +54,29 @@ int main()
     )
   );
 
-  l.reverse();
+  l.emplace_front(
+    cr2::make_plain<128_k>(
+      [](auto& c)
+      {
+        for (;;)
+        {
+          std::cout << 'a' << std::endl;
+          c.suspend();
+        }
+      }
+    )
+  );
 
-  while (l) l();
+  while (
+    std::all_of(
+      l.begin(),
+      l.end(),
+      [](auto&& e)noexcept{return e.state();}
+    )
+  )
+  {
+    l();
+  }
 
   return 0;
 }

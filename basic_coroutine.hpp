@@ -120,14 +120,16 @@ public:
     {
       clobber_all();
     }
-    else if (SUSPENDED == state_)
+    else if (SUSPENDED == state())
     {
       state_ = RUNNING;
 
       restorestate(in_); // return inside
     }
-    else
+    else // NEW, DEAD
     {
+      reset();
+
       state_ = RUNNING;
 
 #if defined(__GNUC__)

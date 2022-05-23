@@ -28,15 +28,6 @@ auto run(auto&& ...c)
     } while (s);
   }
 
-  auto const l(
-    [&]() noexcept(noexcept((c.reset(), ...)))
-    {
-      (c.reset(), ...);
-    }
-  );
-
-  SCOPE_EXIT(&, l());
-
   if constexpr(sizeof...(c) > 1)
   {
     return std::tuple<decltype(c.template retval<true>())...>{

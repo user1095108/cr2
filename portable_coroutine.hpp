@@ -67,7 +67,6 @@ public:
     state_{NEW},
     f_(std::move(f))
   {
-    reset();
   }
 
   ~coroutine()
@@ -95,6 +94,11 @@ public:
 
   void operator()() noexcept
   {
+    if ((NEW == state()) || (DEAD == state()))
+    {
+      reset();
+    }
+
     state_ = RUNNING;
 
     fi_ = std::move(fi_).resume();
@@ -154,7 +158,7 @@ public:
     fi_ = {
       std::allocator_arg_t{},
       boost::context::fixedsize_stack(S),
-      [this](auto&& fi)
+      [&](auto&& fi)
       {
         fi_ = std::move(fi);
 

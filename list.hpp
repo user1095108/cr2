@@ -33,16 +33,16 @@ public:
     store_(::new char[sizeof(c)])
   {
     using C = std::remove_reference_t<decltype(c)>;
+    id_ = ::new (store_.get()) C(std::move(c));
 
-    invoke_ = [](void* const p) noexcept {(*static_cast<C*>(p))();};
-    state_ = [](void* const p) noexcept {return static_cast<C*>(p)->state();};
-    reset_ = [](void* const p) {static_cast<C*>(p)->reset();};
-    destroy_ = [](void* const p) {static_cast<C*>(p)->~C();};
-
-    id_ = ::new (store_.get()) C(std::forward<decltype(c)>(c));
+    invoke_ = [](void* const p) noexcept {(*std::launder(reinterpret_cast<C*>(p)))();};
+    state_ = [](void* const p) noexcept {return std::launder(reinterpret_cast<C*>(p))->state();};
+    reset_ = [](void* const p) {std::launder(reinterpret_cast<C*>(p))->reset();};
+    destroy_ = [](void* const p) {std::launder(reinterpret_cast<C*>(p))->~C();};
   }
 
-  control(control&&) = default;
+  control(control const&) = delete;
+  control(control&& o) = default;
 
   ~control() { destroy_(id_); }
 
@@ -81,19 +81,25 @@ public:
   //
   explicit operator bool() const noexcept
   {
-    return std::all_of(
+    return std::any_of(
       begin(),
       end(),
       [](auto&& e) noexcept { return e.state(); }
     );
   }
 
-  void operator()() const noexcept
+  void operator()() noexcept
   {
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) noexcept { e.invoke_(e.id_); }
+      [](auto& e) noexcept
+      {
+        if (e.state())
+        {
+          e.invoke_(e.id_);
+        }
+      }
     );
   }
 
@@ -118,12 +124,12 @@ public:
   }
 
   //
-  void reset() const
+  void reset()
   {
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) { e.reset(); }
+      [](auto& e) { e.reset(); }
     );
   }
 };
