@@ -88,12 +88,12 @@ public:
     );
   }
 
-  void operator()() noexcept
+  void operator()() const noexcept
   {
     std::for_each(
       begin(),
       end(),
-      [](auto& e) noexcept
+      [](auto&& e) noexcept
       {
         if (e.state())
         {
@@ -124,7 +124,7 @@ public:
   }
 
   //
-  void reset()
+  void reset() const
   {
     std::for_each(
       begin(),
