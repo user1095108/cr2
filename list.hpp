@@ -100,7 +100,7 @@ public:
   //
   void assign(auto&& ...f)
     noexcept(
-      noexcept(inherited_t::clear()) ||
+      noexcept(clear()) &&
       noexcept(
         (
           emplace_back(std::forward<decltype(f)>(f)),
@@ -109,7 +109,7 @@ public:
       )
     )
   {
-    inherited_t::clear();
+    clear();
 
     (
       emplace_back(std::forward<decltype(f)>(f)),
