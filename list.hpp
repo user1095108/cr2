@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <any>
-#include <execution>
 
 #include "generic/forwarder.hpp"
 
