@@ -12,56 +12,58 @@ namespace cr2
 
 namespace detail
 {
-  struct control
+
+struct control
+{
+  void* id;
+
+  void (*invoke)(void*) noexcept;
+  enum state (*state)(void*) noexcept;
+  void (*reset)(void*);
+  void (*destroy)(void*);
+
+  std::unique_ptr<char[]> store;
+
+  control(auto&& l):
+    store(
+      ::new char[sizeof(decltype(make_plain(std::forward<decltype(l)>(l))))]
+    )
   {
-    void* id;
+    using C = decltype(make_plain(std::forward<decltype(l)>(l)));
 
-    void (*invoke)(void*) noexcept;
-    enum state (*state)(void*) noexcept;
-    void (*reset)(void*);
-    void (*destroy)(void*);
+    id = ::new (store.get()) C(
+        make_plain(std::forward<decltype(l)>(l))
+      );
 
-    std::unique_ptr<char[]> store;
+    invoke = [](void* const p) noexcept
+      {
+        (*static_cast<C*>(p))();
+      };
 
-    control(auto&& l):
-      store(
-        ::new char[sizeof(decltype(make_plain(std::forward<decltype(l)>(l))))]
-      )
-    {
-      using C = decltype(make_plain(std::forward<decltype(l)>(l)));
+    state = [](void* const p) noexcept
+      {
+        return static_cast<C*>(p)->state();
+      };
 
-      id = ::new (store.get()) C(
-          make_plain(std::forward<decltype(l)>(l))
-        );
+    reset = [](void* const p) { static_cast<C*>(p)->reset(); };
+    destroy = [](void* const p) { static_cast<C*>(p)->~C(); };
+  }
 
-      invoke = [](void* const p) noexcept
-        {
-          (*static_cast<C*>(p))();
-        };
+  control(control&&) = default;
 
-      state = [](void* const p) noexcept
-        {
-          return static_cast<C*>(p)->state();
-        };
+  ~control() { destroy(id); }
 
-      reset = [](void* const p) { static_cast<C*>(p)->reset(); };
-      destroy = [](void* const p) { static_cast<C*>(p)->~C(); };
-    }
+  //
+  control& operator=(control const&) = delete;
+  control& operator=(control&&) = delete;
+};
 
-    control(control&&) = default;
-
-    ~control() { destroy(id); }
-
-    //
-    control& operator=(control const&) = delete;
-    control& operator=(control&&) = delete;
-  };
 }
 
 class list: public xl::list<detail::control>
 {
 public:
-  list(auto&& ...f)
+  explicit list(auto&& ...f)
     noexcept(noexcept(
         (
           emplace_back(std::forward<decltype(f)>(f)),
