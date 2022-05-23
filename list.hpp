@@ -3,9 +3,7 @@
 # pragma once
 
 #include <algorithm>
-#include <any>
-
-#include "generic/forwarder.hpp"
+#include <memory>
 
 #include "xl/list.hpp"
 
@@ -14,70 +12,51 @@ namespace cr2
 
 namespace detail
 {
+  struct control
+  {
+    void* id;
 
-struct control
-{
-  void* id;
+    void (*invoke)(void*) noexcept;
+    enum state (*state)(void*) noexcept;
+    void (*reset)(void*);
+    void (*destroy)(void*);
 
-  void (*invoke)(void*) noexcept;
-  void (*reset)(void*);
-  enum state (*state)(void*) noexcept;
+    std::unique_ptr<char[]> store;
 
-  std::any store;
-};
-
-inline void set_control(control& ctrl, auto&& l)
-{
-  ctrl.store = make_shared(std::forward<decltype(l)>(l));
-
-  auto& c(
-    *std::any_cast<
-      std::remove_cvref_t<
-        decltype(make_shared(std::forward<decltype(l)>(l)))
-      >&
-    >(ctrl.store)
-  );
-
-  ctrl.id = &c;
-
-  ctrl.invoke = [](void* const p) noexcept
+    control(auto&& l):
+      store(
+        ::new char[sizeof(decltype(make_plain(std::forward<decltype(l)>(l))))]
+      )
     {
-      (*static_cast<decltype(&c)>(p))();
-    };
+      using C = decltype(make_plain(std::forward<decltype(l)>(l)));
 
-  ctrl.reset = [](void* const p)
-    {
-      static_cast<decltype(&c)>(p)->reset();
-    };
+      id = ::new (store.get()) C(
+          make_plain(std::forward<decltype(l)>(l))
+        );
 
-  ctrl.state = [](void* const p) noexcept
-    {
-      return static_cast<decltype(&c)>(p)->state();
-    };
+      invoke = [](void* const p) noexcept
+        {
+          (*static_cast<C*>(p))();
+        };
+
+      state = [](void* const p) noexcept
+        {
+          return static_cast<C*>(p)->state();
+        };
+
+      reset = [](void* const p) { static_cast<C*>(p)->reset(); };
+      destroy = [](void* const p) { static_cast<C*>(p)->~C(); };
+    }
+
+    ~control() { destroy(id); }
+  };
 }
 
-}
-
-class list: private xl::list<detail::control>
+class list: public xl::list<detail::control>
 {
   using inherited_t = xl::list<detail::control>;
 
 public:
-  using inherited_t::value_type;
-
-  using inherited_t::difference_type;
-  using inherited_t::size_type;
-  using inherited_t::reference;
-  using inherited_t::const_reference;
-
-  using inherited_t::iterator;
-  using inherited_t::reverse_iterator;
-  using inherited_t::const_iterator;
-  using inherited_t::const_reverse_iterator;
-
-public:
-  list() = default;
-
   list(auto&& ...f)
     noexcept(noexcept(
         (
@@ -113,33 +92,6 @@ public:
   }
 
   //
-  using inherited_t::empty;
-
-  //
-  using inherited_t::begin;
-  using inherited_t::end;
-
-  using inherited_t::cbegin;
-  using inherited_t::cend;
-
-  using inherited_t::rbegin;
-  using inherited_t::rend;
-
-  using inherited_t::crbegin;
-  using inherited_t::crend;
-
-  //
-  using inherited_t::operator[];
-
-  //
-  using inherited_t::at;
-
-  using inherited_t::back;
-  using inherited_t::front;
-
-  using inherited_t::size;
-
-  //
   void assign(auto&& ...f)
     noexcept(
       noexcept(inherited_t::clear()) ||
@@ -158,34 +110,6 @@ public:
       ...
     );
   }
-
-  //
-  void emplace_back(auto&& l)
-    noexcept(noexcept(inherited_t::emplace_back()))
-  {
-    inherited_t::emplace_back();
-
-    detail::set_control(back(), std::forward<decltype(l)>(l));
-  }
-
-  void emplace_front(auto&& l)
-    noexcept(noexcept(inherited_t::emplace_front()))
-  {
-    inherited_t::emplace_front();
-
-    detail::set_control(front(), std::forward<decltype(l)>(l));
-  }
-
-  //
-  using inherited_t::pop_front;
-  using inherited_t::pop_back;
-
-  //
-  using inherited_t::clear;
-  using inherited_t::erase;
-
-  //
-  using inherited_t::reverse;
 
   //
   void reset()
