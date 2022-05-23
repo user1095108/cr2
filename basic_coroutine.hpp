@@ -124,6 +124,7 @@ public:
     f_ = std::move(o.f_);
   }
 
+  //
   explicit operator bool() const noexcept { return state_; }
 
   __attribute__((noinline)) void operator()() noexcept

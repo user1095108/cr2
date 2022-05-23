@@ -69,8 +69,8 @@ int main()
 
   while (
     std::all_of(
-      l.begin(),
-      l.end(),
+      l.cbegin(),
+      l.cend(),
       [](auto&& e) noexcept { return e.state(); }
     )
   )
