@@ -15,14 +15,6 @@ int main()
     {
       for (;;)
       {
-        std::cout << 'a' << std::endl;
-        c.suspend();
-      }
-    },
-    [](auto& c)
-    {
-      for (;;)
-      {
         std::cout << 'b' << std::endl;
         c.suspend();
       }
@@ -36,6 +28,17 @@ int main()
       }
     }
   };
+
+  l.emplace_front(
+    [](auto& c)
+    {
+      for (;;)
+      {
+        std::cout << 'a' << std::endl;
+        c.suspend();
+      }
+    }
+  );
 
   l.push_back(
     [](auto& c)
