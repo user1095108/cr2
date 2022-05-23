@@ -41,7 +41,7 @@ private:
   void destroy()
     noexcept(std::is_nothrow_destructible_v<R>)
   {
-    if (DEAD == state_)
+    if (DEAD == state())
     {
       std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
     }

@@ -48,7 +48,7 @@ private:
       !std::is_same_v<detail::empty_t, R>
     );
 
-    if (DEAD == state_)
+    if (DEAD == state())
     {
       std::destroy_at(std::launder(reinterpret_cast<R*>(&r_)));
     }
