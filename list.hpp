@@ -21,8 +21,8 @@ class control
 private:
   void* id_;
 
-  void (*invoke_)(void*) noexcept;
   enum state (*state_)(void*) noexcept;
+  void (*invoke_)(void*) noexcept;
   void (*reset_)(void*);
   void (*destroy_)(void*);
 
@@ -35,8 +35,8 @@ public:
     using C = std::remove_reference_t<decltype(c)>;
     id_ = ::new (store_.get()) C(std::move(c));
 
-    invoke_ = [](void* const p) noexcept {(*static_cast<C*>(p))();};
     state_ = [](void* const p) noexcept {return static_cast<C*>(p)->state();};
+    invoke_ = [](void* const p) noexcept {(*static_cast<C*>(p))();};
     reset_ = [](void* const p) {static_cast<C*>(p)->reset();};
     destroy_ = [](void* const p) {static_cast<C*>(p)->~C();};
   }
