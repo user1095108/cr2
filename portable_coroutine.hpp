@@ -99,7 +99,7 @@ public:
   //
   explicit operator bool() const noexcept { return state_; }
 
-  void operator()() noexcept
+  void operator()()
   {
     if ((NEW == state()) || (DEAD == state()))
     {
