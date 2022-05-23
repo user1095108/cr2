@@ -34,7 +34,10 @@ int main()
         std::cout << 'c' << std::endl;
         c.suspend();
       }
-    },
+    }
+  };
+
+  l.push_back(
     [](auto& c)
     {
       std::intmax_t j(6);
@@ -49,7 +52,7 @@ int main()
 
       std::cout << j << std::endl;
     }
-  };
+  );
 
   l.reverse();
 
