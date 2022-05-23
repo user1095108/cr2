@@ -48,7 +48,13 @@ namespace detail
       destroy = [](void* const p) { static_cast<C*>(p)->~C(); };
     }
 
+    control(control&&) = default;
+
     ~control() { destroy(id); }
+
+    //
+    control& operator=(control const&) = delete;
+    control& operator=(control&&) = delete;
   };
 }
 
