@@ -167,11 +167,7 @@ public:
   //
   void reset()
   {
-    std::for_each(
-      begin(),
-      end(),
-      [](auto&& e) { e.reset(); }
-    );
+    std::for_each(begin(), end(), [](auto&& e) { e.reset(); });
   }
 };
 
