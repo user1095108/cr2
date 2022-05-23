@@ -34,12 +34,26 @@ int main()
         std::cout << 'c' << std::endl;
         c.suspend();
       }
+    },
+    [](auto& c)
+    {
+      std::intmax_t j(6);
+
+      for (auto i(j - 1); 1 != i; --i)
+      {
+        std::cout << "coro2\n";
+
+        j *= i;
+        c.suspend();
+      }
+
+      std::cout << j << std::endl;
     }
   };
 
   l.reverse();
 
-  for (auto const i: {0, 1, 2}) { l(); }
+  while (l) l();
 
   return 0;
 }
