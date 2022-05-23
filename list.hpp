@@ -29,16 +29,16 @@ inline void set_control(control& ctrl, auto&& l)
   ctrl.store = make_shared(std::forward<decltype(l)>(l));
 
   auto& c(
-    std::any_cast<
+    *std::any_cast<
       std::remove_cvref_t<
         decltype(make_shared(std::forward<decltype(l)>(l)))
       >&
     >(ctrl.store)
   );
 
-  ctrl.invoke = [&c]() noexcept { (*c)(); };
-  ctrl.reset = [&c]() { c->reset(); };
-  ctrl.state = [&c]() noexcept { return c->state(); };
+  ctrl.invoke = [&c]() noexcept { c(); };
+  ctrl.reset = [&c]() { c.reset(); };
+  ctrl.state = [&c]() noexcept { return c.state(); };
 }
 
 }
@@ -136,6 +136,7 @@ public:
     );
   }
 
+  //
   void emplace_back(auto&& l)
     noexcept(noexcept(inherited_t::emplace_back()))
   {
@@ -169,7 +170,7 @@ public:
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) noexcept { e.reset(); }
+      [](auto&& e) { e.reset(); }
     );
   }
 };
