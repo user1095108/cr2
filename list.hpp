@@ -98,6 +98,9 @@ public:
   }
 
   //
+  using inherited_t::empty;
+
+  //
   using inherited_t::begin;
   using inherited_t::end;
 
@@ -111,6 +114,11 @@ public:
   using inherited_t::crend;
 
   //
+  using inherited_t::operator[];
+
+  //
+  using inherited_t::at;
+
   using inherited_t::back;
   using inherited_t::front;
 
@@ -167,7 +175,11 @@ public:
   //
   void reset()
   {
-    std::for_each(begin(), end(), [](auto&& e) { e.reset(); });
+    std::for_each(
+      begin(),
+      end(),
+      [](auto&& e) { e.reset(); }
+    );
   }
 };
 
