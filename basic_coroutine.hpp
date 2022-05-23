@@ -112,7 +112,7 @@ public:
   coroutine(coroutine const&) = delete;
   coroutine(coroutine&&) = default;
 
-  explicit operator bool() const noexcept { return bool(state_); }
+  explicit operator bool() const noexcept { return state_; }
 
   __attribute__((noinline)) void operator()() noexcept
   {

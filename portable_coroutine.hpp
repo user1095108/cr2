@@ -88,9 +88,14 @@ public:
   }
 
   coroutine(coroutine const&) = delete;
-  coroutine(coroutine&&) = default;
+  coroutine(coroutine&& o)
+    noexcept(noexcept(f_ = std::move(o.f_)))
+  {
+    state_ = o.state_;
+    f_ = std::move(o.f_);
+  }
 
-  explicit operator bool() const noexcept { return bool(state_); }
+  explicit operator bool() const noexcept { return state_; }
 
   void operator()() noexcept
   {
