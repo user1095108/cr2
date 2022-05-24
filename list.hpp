@@ -113,7 +113,7 @@ public:
       }
     );
 
-    return std::pair(p, s);
+    return {p, s};
   }
 
   //
