@@ -11,7 +11,7 @@ int main()
   std::cout <<
     std::get<1>(
       cr2::make_and_run<128_k, 128_k>(
-        [&](auto& c)
+        [](auto& c)
         {
           std::intmax_t j(5);
 
