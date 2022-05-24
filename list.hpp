@@ -107,8 +107,10 @@ public:
         {
           e.invoke_(e.id_);
 
-          p = p || (PAUSED == e.state());
-          s = s || (SUSPENDED == e.state());
+          auto const state(e.state());
+
+          p = p || (PAUSED == state);
+          s = s || (SUSPENDED == state);
         }
       }
     );
