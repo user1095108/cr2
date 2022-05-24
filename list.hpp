@@ -41,16 +41,10 @@ public:
     destroy_ = [](void* const p) { static_cast<C*>(p)->~C(); };
   }
 
+  ~control() { if (store_) { destroy_(id_); } }
+
   control(control const&) = delete;
   control(control&& o) = default;
-
-  ~control()
-  {
-    if (store_)
-    {
-      destroy_(id_);
-    }
-  }
 
   //
   control& operator=(control const&) = delete;
@@ -58,9 +52,9 @@ public:
 
   //
   void const* id() const noexcept { return id_; }
-
   enum state state() const noexcept { return state_(id_); }
 
+  //
   void reset() const { reset_(id_); }
 };
 
