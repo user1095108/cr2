@@ -94,7 +94,7 @@ public:
     );
   }
 
-  std::pair<bool, bool> operator()() const noexcept
+  std::pair<bool, bool> operator()() const
   {
     bool p{}, s{};
 
