@@ -4,8 +4,8 @@ This is a "food-for-thought" repository, as far as basic "hand-rolled" c++ corou
     git submodule update --init
     g++ -std=c++20 -Ofast corodemo.cpp -o t -levent
 # resources
+* [Asynchronous I/O and event notification on linux](http://davmac.org/davpage/linux/async-io.html)
 * [libevent](https://libevent.org/)
 * [libev](https://github.com/enki/libev)
 * [libeio](http://software.schmorp.de/pkg/libeio.html)
 * [libuv](https://github.com/libuv/libuv)
-* [Asynchronous I/O and event notification on linux](http://davmac.org/davpage/linux/async-io.html)
