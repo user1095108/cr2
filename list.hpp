@@ -94,13 +94,26 @@ public:
     );
   }
 
-  void operator()() const noexcept
+  std::pair<bool, bool> operator()() const noexcept
   {
+    bool p{}, s{};
+
     std::for_each(
       begin(),
       end(),
-      [](auto&& e) noexcept { if (e.state()) { e.invoke_(e.id_); } }
+      [&](auto&& e)
+      {
+        if (e.state() >= NEW)
+        {
+          e.invoke_(e.id_);
+
+          p = p || (PAUSED == e.state());
+          s = s || (SUSPENDED == e.state());
+        }
+      }
     );
+
+    return std::pair(p, s);
   }
 
   //

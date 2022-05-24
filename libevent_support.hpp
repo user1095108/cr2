@@ -263,7 +263,8 @@ auto run(auto&& ...c)
       (
         (
           (c.state() >= NEW ? c() : void()),
-          (s = s || (SUSPENDED == c.state()), p = p || (PAUSED == c.state()))
+          (p = p || (PAUSED == c.state())),
+          (s = s || (SUSPENDED == c.state()))
         ),
         ...
       );
