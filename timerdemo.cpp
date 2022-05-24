@@ -54,7 +54,7 @@ int main()
     std::endl;
 
   cr2::make_and_run<128_k>(
-    [&](auto& c)
+    [](auto& c)
     {
       struct myevent : event
       {
