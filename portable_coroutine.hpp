@@ -63,7 +63,8 @@ private:
   }
 
 public:
-  explicit coroutine(F&& f):
+  explicit coroutine(F&& f)
+    noexcept(noexcept(F(std::move(f)))):
     state_{NEW},
     f_(std::move(f))
   {
