@@ -13,7 +13,7 @@ int main()
       cr2::make_and_run<128_k, 128_k>(
         [&](auto& c)
         {
-          std::intmax_t j(5);
+          std::uintmax_t j(5);
 
           for (auto i(j - 1); 1 != i; --i)
           {

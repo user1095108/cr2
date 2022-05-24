@@ -44,7 +44,7 @@ int main()
         },
         [](auto& c)
         {
-          std::intmax_t j(5);
+          std::uintmax_t j(5);
 
           for (auto i(j - 1); 1 != i; --i)
           {
