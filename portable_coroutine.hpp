@@ -58,7 +58,6 @@ private:
   void suspend()
   {
     state_ = State;
-
     fi_ = std::move(fi_).resume();
   }
 
@@ -117,7 +116,6 @@ public:
     }
 
     state_ = RUNNING;
-
     fi_ = std::move(fi_).resume();
   }
 
