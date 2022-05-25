@@ -90,7 +90,9 @@ public:
   coroutine(coroutine const&) = delete;
 
   coroutine(coroutine&& o)
-    noexcept(noexcept(f_ = std::move(o.f_)) && noexcept(o.destroy()))
+    noexcept(noexcept(F(std::move(o.f_))) && noexcept(o.destroy())):
+    state_{NEW},
+    f_(std::move(o.f_))
   {
     if constexpr(
       !std::is_pointer_v<R> &&
@@ -100,9 +102,6 @@ public:
     {
       o.destroy();
     }
-
-    f_ = std::move(o.f_);
-    state_ = NEW;
   }
 
   //
