@@ -74,7 +74,7 @@ int main()
         }
       )
     ) <<
-  std::endl;
+    std::endl;
 
   uv_loop_close(uv_default_loop());
 
