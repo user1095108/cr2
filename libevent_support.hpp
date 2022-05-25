@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <concepts>
+#include <iterator>
 
 #include "generic/invoke.hpp"
 
