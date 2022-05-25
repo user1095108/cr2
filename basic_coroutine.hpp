@@ -118,7 +118,7 @@ public:
   coroutine(coroutine const&) = delete;
 
   coroutine(coroutine&& o)
-    noexcept(noexcept(F(std::move(f))) && noexcept(o.destroy())):
+    noexcept(noexcept(F(std::move(o.f_))) && noexcept(o.destroy())):
     state_{NEW},
     f_(std::move(o.f_))
   {
