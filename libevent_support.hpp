@@ -125,7 +125,11 @@ auto await(auto& c, integral_c auto&& ...a)
   {
     c.pause();
 
-    std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
+    std::for_each(
+      std::begin(ev),
+      std::end(ev),
+      [](auto& e) noexcept { event_del(&e); }
+    );
   }
 
   return t;
@@ -194,7 +198,11 @@ auto await(auto& c, duration_c auto const d,
   {
     c.pause();
 
-    std::ranges::for_each(ev, [](auto& e) noexcept { event_del(&e); });
+    std::for_each(
+      std::begin(ev),
+      std::end(ev),
+      [](auto& e) noexcept { event_del(&e); }
+    );
   }
 
   return t;
