@@ -138,10 +138,7 @@ auto await(auto& c, uv_stream_t* const uvs, char* const data)
 
   uvs->data = &p;
 
-  if (s = G(uvs,
-      uv_alloc_cb,
-      uv_read_cb
-  ); s < 0)
+  if (s = G(uvs, uv_alloc_cb, uv_read_cb); s < 0)
   {
     return std::pair{s, decltype(b){}};
   }
