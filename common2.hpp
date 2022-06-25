@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <memory> // std::unique_ptr, std::shared_ptr
 #include <tuple>
+#include <utility>
 
 #include "generic/forwarder.hpp"
 #include "generic/scopeexit.hpp"

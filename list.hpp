@@ -2,8 +2,6 @@
 # define CR2_LIST_HPP
 # pragma once
 
-#include <memory>
-
 #include "xl/list.hpp"
 
 namespace cr2
@@ -88,7 +86,7 @@ public:
     );
   }
 
-  std::pair<bool, bool> operator()() const
+  auto operator()() const
   {
     bool p{}, s{};
 
@@ -109,7 +107,7 @@ public:
       }
     );
 
-    return {p, s};
+    return std::pair(p, s);
   }
 
   //
